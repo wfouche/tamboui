@@ -558,7 +558,7 @@ public class Terminal<B extends Backend> implements AutoCloseable {
 | `Scrollbar` | Stateful | ✅ Done | Visual scrollbar indicator |
 | `Chart` | Stateless | ✅ Done | Line/scatter graphs for datasets |
 | `Canvas` | Stateless | ✅ Done | Arbitrary shape drawing with braille/block characters |
-| `Calendar` | Stateful | ❌ TODO | Monthly calendar view (optional feature) |
+| `Calendar` | Stateless | ✅ Done | Monthly calendar view with date styling |
 
 ### Demo Requirement
 
@@ -590,7 +590,6 @@ The build automatically includes any subdirectory of `demos/` as a project.
 | `Table` | `TableState` | Grid with rows/columns and selection | High |
 | `Tabs` | `TabsState` | Tab bar with selection | High |
 | `Scrollbar` | `ScrollbarState` | Visual scrollbar indicator | Medium |
-| `Calendar` | `CalendarState` | Monthly calendar view | Low |
 
 ### Example Widget Implementation
 
@@ -1132,8 +1131,9 @@ jratatui/
 │       │   ├── BarGroup.java
 │       │   └── BarChartState.java
 │       ├── calendar/
-│       │   ├── Calendar.java
-│       │   └── CalendarState.java
+│       │   ├── CalendarEventStore.java
+│       │   ├── DateStyler.java
+│       │   └── Monthly.java
 │       ├── scrollbar/
 │       │   ├── Scrollbar.java
 │       │   ├── ScrollbarOrientation.java
@@ -1574,8 +1574,8 @@ class BlockTest {
 - [x] `Chart` (line/scatter)
 - [x] `Canvas` with shapes
 
-### Phase 9: Advanced Features ❌ TODO
-- [ ] `Calendar` widget
+### Phase 9: Advanced Features ⏳ IN PROGRESS
+- [x] `Calendar` widget (Monthly with DateStyler, CalendarEventStore)
 - [ ] Layout caching (ThreadLocal LRU cache)
 - [ ] Viewport modes (inline, fixed)
 - [ ] Mouse event handling in widgets
@@ -1589,7 +1589,7 @@ class BlockTest {
 
 **Test Summary:**
 - jratatui-core: 81 tests passing
-- jratatui-widgets: 355 tests passing
+- jratatui-widgets: 381 tests passing (includes Calendar: 26 tests)
 
 ### Phase 11: Polish & Documentation ❌ TODO
 - [ ] Comprehensive Javadoc
