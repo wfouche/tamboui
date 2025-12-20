@@ -57,8 +57,10 @@ public final class TuiRunner implements AutoCloseable {
     private final NonBlockingReader reader;
     private final BlockingQueue<Event> eventQueue;
     private final AtomicBoolean running;
+    private final AtomicBoolean cleanedUp;
     private final ScheduledExecutorService tickScheduler;
     private final AtomicLong frameCount;
+    private final Thread shutdownHook;
     private volatile Instant lastTick;
     private volatile Size lastSize;
 
@@ -69,6 +71,7 @@ public final class TuiRunner implements AutoCloseable {
         this.reader = backend.jlineTerminal().reader();
         this.eventQueue = new LinkedBlockingQueue<>();
         this.running = new AtomicBoolean(true);
+        this.cleanedUp = new AtomicBoolean(false);
         this.frameCount = new AtomicLong(0);
         this.lastTick = Instant.now();
 
@@ -104,6 +107,14 @@ public final class TuiRunner implements AutoCloseable {
             tickScheduler.scheduleAtFixedRate(this::generateTick, periodMs, periodMs, TimeUnit.MILLISECONDS);
         } else {
             this.tickScheduler = null;
+        }
+
+        // Register shutdown hook if enabled
+        if (config.shutdownHook()) {
+            this.shutdownHook = new Thread(this::cleanup, "tui-shutdown-hook");
+            Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+        } else {
+            this.shutdownHook = null;
         }
     }
 
@@ -257,6 +268,15 @@ public final class TuiRunner implements AutoCloseable {
     public void close() {
         running.set(false);
 
+        // Remove shutdown hook if it was registered (prevents it from running during normal close)
+        if (shutdownHook != null) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (IllegalStateException e) {
+                // JVM is already shutting down, hook will run anyway
+            }
+        }
+
         // Shutdown tick scheduler
         if (tickScheduler != null) {
             tickScheduler.shutdownNow();
@@ -265,6 +285,20 @@ public final class TuiRunner implements AutoCloseable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        }
+
+        // Perform cleanup
+        cleanup();
+    }
+
+    /**
+     * Performs terminal cleanup. This is idempotent and safe to call multiple times.
+     * Called both from close() and from the shutdown hook.
+     */
+    private void cleanup() {
+        // Ensure cleanup only runs once
+        if (!cleanedUp.compareAndSet(false, true)) {
+            return;
         }
 
         // Restore terminal state
@@ -279,7 +313,7 @@ public final class TuiRunner implements AutoCloseable {
                 backend.leaveAlternateScreen();
             }
         } catch (Exception e) {
-            // Best effort cleanup - log and continue
+            // Best effort cleanup - continue even on error
         } finally {
             try {
                 backend.close();

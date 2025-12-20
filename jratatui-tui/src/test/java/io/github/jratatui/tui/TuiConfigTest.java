@@ -24,6 +24,7 @@ class TuiConfigTest {
         assertThat(config.mouseCapture()).isFalse();
         assertThat(config.pollTimeout()).isEqualTo(Duration.ofMillis(100));
         assertThat(config.ticksEnabled()).isFalse();
+        assertThat(config.shutdownHook()).isTrue();
     }
 
     @Test
@@ -92,5 +93,21 @@ class TuiConfigTest {
                 .tickRate(Duration.ofMillis(16))
                 .build();
         assertThat(config.ticksEnabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("shutdownHook can be disabled via builder")
+    void shutdownHookCanBeDisabled() {
+        var config = TuiConfig.builder()
+                .shutdownHook(false)
+                .build();
+        assertThat(config.shutdownHook()).isFalse();
+    }
+
+    @Test
+    @DisplayName("builder defaults shutdownHook to true")
+    void builderDefaultsShutdownHookToTrue() {
+        var config = TuiConfig.builder().build();
+        assertThat(config.shutdownHook()).isTrue();
     }
 }

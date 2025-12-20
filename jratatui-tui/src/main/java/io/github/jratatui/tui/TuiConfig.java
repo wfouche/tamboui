@@ -15,6 +15,7 @@ import java.time.Duration;
  * @param mouseCapture     whether to capture mouse events (default: false)
  * @param pollTimeout      timeout for polling events (default: 100ms)
  * @param tickRate         interval between tick events, or null to disable (default: null)
+ * @param shutdownHook     whether to register a shutdown hook for terminal cleanup (default: true)
  */
 public record TuiConfig(
     boolean rawMode,
@@ -22,7 +23,8 @@ public record TuiConfig(
     boolean hideCursor,
     boolean mouseCapture,
     Duration pollTimeout,
-    Duration tickRate
+    Duration tickRate,
+    boolean shutdownHook
 ) {
 
     /**
@@ -35,7 +37,8 @@ public record TuiConfig(
             true,                        // hideCursor
             false,                       // mouseCapture
             Duration.ofMillis(100),      // pollTimeout
-            null                         // tickRate (disabled)
+            null,                        // tickRate (disabled)
+            true                         // shutdownHook
         );
     }
 
@@ -72,6 +75,7 @@ public record TuiConfig(
         private boolean mouseCapture = false;
         private Duration pollTimeout = Duration.ofMillis(100);
         private Duration tickRate = null;
+        private boolean shutdownHook = true;
 
         private Builder() {}
 
@@ -127,6 +131,18 @@ public record TuiConfig(
         }
 
         /**
+         * Sets whether to register a shutdown hook for terminal cleanup.
+         * When enabled (default), the terminal state will be restored even if
+         * the application is terminated with Ctrl+C or other signals.
+         *
+         * @param shutdownHook true to enable shutdown hook (default), false to disable
+         */
+        public Builder shutdownHook(boolean shutdownHook) {
+            this.shutdownHook = shutdownHook;
+            return this;
+        }
+
+        /**
          * Builds the configuration.
          */
         public TuiConfig build() {
@@ -136,7 +152,8 @@ public record TuiConfig(
                 hideCursor,
                 mouseCapture,
                 pollTimeout,
-                tickRate
+                tickRate,
+                shutdownHook
             );
         }
     }
