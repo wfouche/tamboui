@@ -1,0 +1,608 @@
+/*
+ * Copyright (c) 2025 Glimt Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package ink.glimt.widgets.barchart;
+
+import ink.glimt.buffer.Buffer;
+import ink.glimt.layout.Direction;
+import ink.glimt.layout.Rect;
+import ink.glimt.style.Style;
+import ink.glimt.text.Line;
+import ink.glimt.widgets.Widget;
+import ink.glimt.widgets.block.Block;
+import static ink.glimt.util.CollectionUtil.listCopyOf;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A bar chart widget for displaying grouped data.
+ * <p>
+ * Supports both vertical (default) and horizontal bar orientations,
+ * with customizable bar widths, gaps, and styling.
+ *
+ * <pre>{@code
+ * // Simple bar chart with values
+ * BarChart chart = BarChart.builder()
+ *     .data(BarGroup.of(10, 20, 30, 40))
+ *     .build();
+ *
+ * // Grouped bar chart with labels
+ * BarChart chart2 = BarChart.builder()
+ *     .data(
+ *         BarGroup.of("Q1", Bar.of(100, "Jan"), Bar.of(150, "Feb")),
+ *         BarGroup.of("Q2", Bar.of(120, "Mar"), Bar.of(180, "Apr"))
+ *     )
+ *     .barWidth(3)
+ *     .barGap(1)
+ *     .groupGap(2)
+ *     .barStyle(Style.EMPTY.fg(Color.CYAN))
+ *     .block(Block.bordered().title(Title.from("Sales")))
+ *     .build();
+ * }</pre>
+ *
+ * @see Bar
+ * @see BarGroup
+ */
+public final class BarChart implements Widget {
+
+    /**
+     * Symbol set for rendering bar fills.
+     */
+    public static final class BarSet {
+        private final String empty;
+        private final String oneEighth;
+        private final String oneQuarter;
+        private final String threeEighths;
+        private final String half;
+        private final String fiveEighths;
+        private final String threeQuarters;
+        private final String sevenEighths;
+        private final String full;
+
+        public BarSet(
+            String empty,
+            String oneEighth,
+            String oneQuarter,
+            String threeEighths,
+            String half,
+            String fiveEighths,
+            String threeQuarters,
+            String sevenEighths,
+            String full
+        ) {
+            this.empty = empty;
+            this.oneEighth = oneEighth;
+            this.oneQuarter = oneQuarter;
+            this.threeEighths = threeEighths;
+            this.half = half;
+            this.fiveEighths = fiveEighths;
+            this.threeQuarters = threeQuarters;
+            this.sevenEighths = sevenEighths;
+            this.full = full;
+        }
+
+        /**
+         * Nine-level vertical bar set.
+         */
+        public static final BarSet NINE_LEVELS = new BarSet(
+            " ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"
+        );
+
+        /**
+         * Three-level vertical bar set.
+         */
+        public static final BarSet THREE_LEVELS = new BarSet(
+            " ", "▄", "▄", "▄", "▄", "█", "█", "█", "█"
+        );
+
+        /**
+         * Horizontal bar set (left to right).
+         */
+        public static final BarSet HORIZONTAL = new BarSet(
+            " ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"
+        );
+
+        /**
+         * Returns the symbols as an array for indexed access.
+         */
+        public String[] symbols() {
+            return new String[] {
+                empty, oneEighth, oneQuarter, threeEighths,
+                half, fiveEighths, threeQuarters, sevenEighths, full
+            };
+        }
+
+        public String empty() {
+            return empty;
+        }
+
+        public String oneEighth() {
+            return oneEighth;
+        }
+
+        public String oneQuarter() {
+            return oneQuarter;
+        }
+
+        public String threeEighths() {
+            return threeEighths;
+        }
+
+        public String half() {
+            return half;
+        }
+
+        public String fiveEighths() {
+            return fiveEighths;
+        }
+
+        public String threeQuarters() {
+            return threeQuarters;
+        }
+
+        public String sevenEighths() {
+            return sevenEighths;
+        }
+
+        public String full() {
+            return full;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof BarSet)) {
+                return false;
+            }
+            BarSet barSet = (BarSet) o;
+            return empty.equals(barSet.empty)
+                && oneEighth.equals(barSet.oneEighth)
+                && oneQuarter.equals(barSet.oneQuarter)
+                && threeEighths.equals(barSet.threeEighths)
+                && half.equals(barSet.half)
+                && fiveEighths.equals(barSet.fiveEighths)
+                && threeQuarters.equals(barSet.threeQuarters)
+                && sevenEighths.equals(barSet.sevenEighths)
+                && full.equals(barSet.full);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = empty.hashCode();
+            result = 31 * result + oneEighth.hashCode();
+            result = 31 * result + oneQuarter.hashCode();
+            result = 31 * result + threeEighths.hashCode();
+            result = 31 * result + half.hashCode();
+            result = 31 * result + fiveEighths.hashCode();
+            result = 31 * result + threeQuarters.hashCode();
+            result = 31 * result + sevenEighths.hashCode();
+            result = 31 * result + full.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                "BarSet[empty=%s, oneEighth=%s, oneQuarter=%s, threeEighths=%s, half=%s, fiveEighths=%s, threeQuarters=%s, sevenEighths=%s, full=%s]",
+                empty, oneEighth, oneQuarter, threeEighths, half, fiveEighths, threeQuarters, sevenEighths, full);
+        }
+    }
+
+    private final List<BarGroup> data;
+    private final Long max;
+    private final int barWidth;
+    private final int barGap;
+    private final int groupGap;
+    private final Direction direction;
+    private final Style style;
+    private final Style barStyle;
+    private final Style valueStyle;
+    private final Style labelStyle;
+    private final Block block;
+    private final BarSet barSet;
+
+    private BarChart(Builder builder) {
+        this.data = listCopyOf(builder.data);
+        this.max = builder.max;
+        this.barWidth = builder.barWidth;
+        this.barGap = builder.barGap;
+        this.groupGap = builder.groupGap;
+        this.direction = builder.direction;
+        this.style = builder.style;
+        this.barStyle = builder.barStyle;
+        this.valueStyle = builder.valueStyle;
+        this.labelStyle = builder.labelStyle;
+        this.block = builder.block;
+        this.barSet = builder.barSet;
+    }
+
+    /**
+     * Creates a new bar chart builder.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @Override
+    public void render(Rect area, Buffer buffer) {
+        if (area.isEmpty() || data.isEmpty()) {
+            return;
+        }
+
+        // Apply overall style
+        if (style != null) {
+            buffer.setStyle(area, style);
+        }
+
+        // Render block if present
+        Rect chartArea = area;
+        if (block != null) {
+            block.render(area, buffer);
+            chartArea = block.inner(area);
+        }
+
+        if (chartArea.isEmpty()) {
+            return;
+        }
+
+        // Calculate max value
+        long effectiveMax = calculateMax();
+        if (effectiveMax == 0) {
+            effectiveMax = 1;
+        }
+
+        if (direction == Direction.VERTICAL) {
+            renderVertical(chartArea, buffer, effectiveMax);
+        } else {
+            renderHorizontal(chartArea, buffer, effectiveMax);
+        }
+    }
+
+    private void renderVertical(Rect area, Buffer buffer, long maxValue) {
+        // Reserve space for labels (bottom row)
+        int labelHeight = hasLabels() ? 1 : 0;
+        int chartHeight = area.height() - labelHeight;
+
+        if (chartHeight <= 0) {
+            return;
+        }
+
+        int x = area.x();
+        boolean firstGroup = true;
+
+        for (BarGroup group : data) {
+            if (!firstGroup) {
+                x += groupGap;
+            }
+            firstGroup = false;
+
+            boolean firstBar = true;
+            for (Bar bar : group.bars()) {
+                if (!firstBar) {
+                    x += barGap;
+                }
+                firstBar = false;
+
+                if (x + barWidth > area.right()) {
+                    break; // No more space
+                }
+
+                // Calculate bar height
+                double ratio = (double) bar.value() / maxValue;
+                int barHeight = (int) Math.round(ratio * chartHeight);
+                barHeight = Math.min(barHeight, chartHeight);
+
+                // Get effective style
+                Style effectiveBarStyle = bar.style().orElse(barStyle != null ? barStyle : Style.EMPTY);
+
+                // Render bar from bottom
+                for (int h = 0; h < barHeight; h++) {
+                    int y = area.y() + chartHeight - 1 - h;
+                    for (int w = 0; w < barWidth && x + w < area.right(); w++) {
+                        buffer.setString(x + w, y, barSet.full, effectiveBarStyle);
+                    }
+                }
+
+                // Render partial fill for sub-cell precision
+                if (barHeight < chartHeight && bar.value() > 0) {
+                    double remainder = (ratio * chartHeight) - barHeight;
+                    if (remainder > 0) {
+                        int symbolIndex = (int) Math.round(remainder * 8);
+                        symbolIndex = Math.min(symbolIndex, 8);
+                        if (symbolIndex > 0) {
+                            String[] symbols = barSet.symbols();
+                            int y = area.y() + chartHeight - 1 - barHeight;
+                            for (int w = 0; w < barWidth && x + w < area.right(); w++) {
+                                buffer.setString(x + w, y, symbols[symbolIndex], effectiveBarStyle);
+                            }
+                        }
+                    }
+                }
+
+                // Render label if present
+                if (labelHeight > 0 && bar.label().isPresent()) {
+                    String labelStr = truncate(bar.label().get().rawContent(), barWidth);
+                    Style effectiveLabelStyle = labelStyle != null ? labelStyle : Style.EMPTY;
+                    int labelX = x + (barWidth - labelStr.length()) / 2;
+                    labelX = Math.max(x, labelX);
+                    buffer.setString(labelX, area.bottom() - 1, labelStr, effectiveLabelStyle);
+                }
+
+                // Render value above bar
+                if (chartHeight > 1 && barHeight < chartHeight) {
+                    String valueStr = bar.displayValue();
+                    if (valueStr.length() <= barWidth) {
+                        Style effectiveValueStyle = bar.valueStyle()
+                            .orElse(valueStyle != null ? valueStyle : Style.EMPTY);
+                        int valueX = x + (barWidth - valueStr.length()) / 2;
+                        valueX = Math.max(x, valueX);
+                        int valueY = area.y() + chartHeight - barHeight - 1;
+                        if (valueY >= area.y()) {
+                            buffer.setString(valueX, valueY, valueStr, effectiveValueStyle);
+                        }
+                    }
+                }
+
+                x += barWidth;
+            }
+        }
+    }
+
+    private void renderHorizontal(Rect area, Buffer buffer, long maxValue) {
+        // Calculate label width (leftmost column)
+        int labelWidth = calculateLabelWidth();
+        int chartWidth = area.width() - labelWidth - 1; // -1 for spacing
+
+        if (chartWidth <= 0) {
+            return;
+        }
+
+        int y = area.y();
+        boolean firstGroup = true;
+
+        for (BarGroup group : data) {
+            if (!firstGroup) {
+                y += groupGap;
+            }
+            firstGroup = false;
+
+            boolean firstBar = true;
+            for (Bar bar : group.bars()) {
+                if (!firstBar) {
+                    y += barGap;
+                }
+                firstBar = false;
+
+                if (y + barWidth > area.bottom()) {
+                    break; // No more space
+                }
+
+                // Calculate bar length
+                double ratio = (double) bar.value() / maxValue;
+                int barLength = (int) Math.round(ratio * chartWidth);
+                barLength = Math.min(barLength, chartWidth);
+
+                // Get effective style
+                Style effectiveBarStyle = bar.style().orElse(barStyle != null ? barStyle : Style.EMPTY);
+
+                // Render label
+                if (bar.label().isPresent()) {
+                    String labelStr = truncate(bar.label().get().rawContent(), labelWidth);
+                    Style effectiveLabelStyle = labelStyle != null ? labelStyle : Style.EMPTY;
+                    // Right-align label
+                    int labelX = area.x() + labelWidth - labelStr.length();
+                    for (int h = 0; h < barWidth && y + h < area.bottom(); h++) {
+                        buffer.setString(labelX, y + h, labelStr, effectiveLabelStyle);
+                    }
+                }
+
+                // Render bar
+                int barStartX = area.x() + labelWidth + 1;
+                for (int l = 0; l < barLength; l++) {
+                    for (int h = 0; h < barWidth && y + h < area.bottom(); h++) {
+                        buffer.setString(barStartX + l, y + h, BarSet.HORIZONTAL.full, effectiveBarStyle);
+                    }
+                }
+
+                // Render value at end of bar
+                String valueStr = bar.displayValue();
+                if (barLength + valueStr.length() + 1 <= chartWidth) {
+                    Style effectiveValueStyle = bar.valueStyle()
+                        .orElse(valueStyle != null ? valueStyle : Style.EMPTY);
+                    buffer.setString(barStartX + barLength + 1, y, valueStr, effectiveValueStyle);
+                }
+
+                y += barWidth;
+            }
+        }
+    }
+
+    private long calculateMax() {
+        if (max != null) {
+            return max;
+        }
+        return data.stream()
+            .mapToLong(BarGroup::maxValue)
+            .max()
+            .orElse(0);
+    }
+
+    private boolean hasLabels() {
+        return data.stream()
+            .flatMap(g -> g.bars().stream())
+            .anyMatch(b -> b.label().isPresent());
+    }
+
+    private int calculateLabelWidth() {
+        return data.stream()
+            .flatMap(g -> g.bars().stream())
+            .filter(b -> b.label().isPresent())
+            .mapToInt(b -> b.label().get().width())
+            .max()
+            .orElse(0);
+    }
+
+    private String truncate(String str, int maxLen) {
+        if (str.length() <= maxLen) {
+            return str;
+        }
+        return str.substring(0, maxLen);
+    }
+
+    /**
+     * Builder for {@link BarChart}.
+     */
+    public static final class Builder {
+        private final List<BarGroup> data = new ArrayList<>();
+        private Long max;
+        private int barWidth = 1;
+        private int barGap = 1;
+        private int groupGap = 1;
+        private Direction direction = Direction.VERTICAL;
+        private Style style;
+        private Style barStyle;
+        private Style valueStyle;
+        private Style labelStyle;
+        private Block block;
+        private BarSet barSet = BarSet.NINE_LEVELS;
+
+        private Builder() {}
+
+        /**
+         * Adds bar groups to the chart.
+         */
+        public Builder data(BarGroup... groups) {
+            if (groups != null) {
+                this.data.addAll(listCopyOf(groups));
+            }
+            return this;
+        }
+
+        /**
+         * Adds bar groups to the chart.
+         */
+        public Builder data(List<BarGroup> groups) {
+            if (groups != null) {
+                this.data.addAll(groups);
+            }
+            return this;
+        }
+
+        /**
+         * Adds a single bar group.
+         */
+        public Builder addGroup(BarGroup group) {
+            if (group != null) {
+                this.data.add(group);
+            }
+            return this;
+        }
+
+        /**
+         * Sets the maximum value for scaling.
+         */
+        public Builder max(long max) {
+            this.max = max;
+            return this;
+        }
+
+        /**
+         * Clears the explicit max, using data maximum instead.
+         */
+        public Builder autoMax() {
+            this.max = null;
+            return this;
+        }
+
+        /**
+         * Sets the bar width (default: 1).
+         */
+        public Builder barWidth(int barWidth) {
+            this.barWidth = Math.max(1, barWidth);
+            return this;
+        }
+
+        /**
+         * Sets the gap between bars in a group (default: 1).
+         */
+        public Builder barGap(int barGap) {
+            this.barGap = Math.max(0, barGap);
+            return this;
+        }
+
+        /**
+         * Sets the gap between groups (default: 1).
+         */
+        public Builder groupGap(int groupGap) {
+            this.groupGap = Math.max(0, groupGap);
+            return this;
+        }
+
+        /**
+         * Sets the chart direction (default: VERTICAL).
+         */
+        public Builder direction(Direction direction) {
+            this.direction = direction != null ? direction : Direction.VERTICAL;
+            return this;
+        }
+
+        /**
+         * Sets the overall chart style.
+         */
+        public Builder style(Style style) {
+            this.style = style;
+            return this;
+        }
+
+        /**
+         * Sets the default bar style.
+         */
+        public Builder barStyle(Style barStyle) {
+            this.barStyle = barStyle;
+            return this;
+        }
+
+        /**
+         * Sets the value display style.
+         */
+        public Builder valueStyle(Style valueStyle) {
+            this.valueStyle = valueStyle;
+            return this;
+        }
+
+        /**
+         * Sets the label style.
+         */
+        public Builder labelStyle(Style labelStyle) {
+            this.labelStyle = labelStyle;
+            return this;
+        }
+
+        /**
+         * Wraps the chart in a block.
+         */
+        public Builder block(Block block) {
+            this.block = block;
+            return this;
+        }
+
+        /**
+         * Sets the bar symbol set.
+         */
+        public Builder barSet(BarSet barSet) {
+            this.barSet = barSet != null ? barSet : BarSet.NINE_LEVELS;
+            return this;
+        }
+
+        /**
+         * Builds the bar chart.
+         */
+        public BarChart build() {
+            return new BarChart(this);
+        }
+    }
+}

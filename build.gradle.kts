@@ -4,7 +4,7 @@ plugins {
 }
 
 allprojects {
-    group = "io.github.jratatui"
+    group = "ink.glimt"
     version = "0.1.0-SNAPSHOT"
 
     repositories {

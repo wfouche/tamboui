@@ -1,0 +1,308 @@
+/*
+ * Copyright (c) 2025 Glimt Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package ink.glimt.demo;
+
+import ink.glimt.backend.jline.JLineBackend;
+import ink.glimt.layout.Constraint;
+import ink.glimt.layout.Layout;
+import ink.glimt.layout.Rect;
+import ink.glimt.style.Color;
+import ink.glimt.style.Style;
+import ink.glimt.terminal.Frame;
+import ink.glimt.terminal.Terminal;
+import ink.glimt.text.Line;
+import ink.glimt.text.Span;
+import ink.glimt.text.Text;
+import ink.glimt.widgets.block.Block;
+import ink.glimt.widgets.block.BorderType;
+import ink.glimt.widgets.block.Borders;
+import ink.glimt.widgets.block.Title;
+import ink.glimt.widgets.paragraph.Paragraph;
+import ink.glimt.widgets.tabs.Tabs;
+import ink.glimt.widgets.tabs.TabsState;
+import org.jline.terminal.Terminal.Signal;
+import org.jline.utils.NonBlockingReader;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Demo TUI application showcasing the Tabs widget.
+ */
+public class TabsDemo {
+
+    private static final String[] TAB_NAMES = {"Home", "Settings", "Profile", "Help"};
+
+    private static final String[][] TAB_CONTENT = {
+        { // Home
+            "Welcome to Glimt!",
+            "",
+            "Glimt is a pure Java port of ratatui, the Rust library for",
+            "building terminal user interfaces.",
+            "",
+            "Features:",
+            "  - Pure Java implementation (no native dependencies)",
+            "  - Modern Java 21+ features (records, sealed classes, pattern matching)",
+            "  - JLine backend for cross-platform terminal support",
+            "  - GraalVM native image compatible"
+        },
+        { // Settings
+            "Application Settings",
+            "",
+            "Theme:        Dark",
+            "Font Size:    Medium",
+            "Auto-save:    Enabled",
+            "Notifications: On",
+            "",
+            "Press 's' to toggle settings (demo only)"
+        },
+        { // Profile
+            "User Profile",
+            "",
+            "Username:     developer",
+            "Email:        dev@example.com",
+            "Role:         Administrator",
+            "Last Login:   Today",
+            "",
+            "Account created: January 2025"
+        },
+        { // Help
+            "Keyboard Shortcuts",
+            "",
+            "Navigation:",
+            "  Tab / Right Arrow  - Next tab",
+            "  Shift+Tab / Left   - Previous tab",
+            "  1-4                - Jump to tab",
+            "",
+            "General:",
+            "  q / Ctrl+C         - Quit application",
+            "  ?                  - Show this help"
+        }
+    };
+
+    private boolean running = true;
+    private TabsState tabsState = new TabsState(0);
+
+    public static void main(String[] args) throws Exception {
+        new TabsDemo().run();
+    }
+
+    public void run() throws Exception {
+        try (JLineBackend backend = new JLineBackend()) {
+            backend.enableRawMode();
+            backend.enterAlternateScreen();
+            backend.hideCursor();
+
+            Terminal<JLineBackend> terminal = new Terminal<>(backend);
+
+            // Handle resize
+            backend.jlineTerminal().handle(Signal.WINCH, signal -> {
+                try {
+                    terminal.draw(this::ui);
+                } catch (IOException e) {
+                    // Ignore
+                }
+            });
+
+            NonBlockingReader reader = backend.jlineTerminal().reader();
+
+            // Initial draw
+            terminal.draw(this::ui);
+
+            // Event loop
+            while (running) {
+                int c = reader.read(100);
+                if (c == -2 || c == -1) {
+                    continue;
+                }
+
+                boolean needsRedraw = handleInput(c, reader);
+                if (needsRedraw) {
+                    terminal.draw(this::ui);
+                }
+            }
+        }
+    }
+
+    private boolean handleInput(int c, NonBlockingReader reader) throws IOException {
+        // Handle escape sequences
+        if (c == 27) {
+            int next = reader.peek(50);
+            if (next == '[') {
+                reader.read();
+                int code = reader.read();
+                return handleEscapeSequence(code);
+            }
+            return false;
+        }
+
+        return switch (c) {
+            case 'q', 'Q', 3 -> {
+                running = false;
+                yield true;
+            }
+            case '\t' -> { // Tab
+                tabsState.selectNext(TAB_NAMES.length);
+                yield true;
+            }
+            case '1' -> {
+                tabsState.select(0);
+                yield true;
+            }
+            case '2' -> {
+                tabsState.select(1);
+                yield true;
+            }
+            case '3' -> {
+                tabsState.select(2);
+                yield true;
+            }
+            case '4' -> {
+                tabsState.select(3);
+                yield true;
+            }
+            default -> false;
+        };
+    }
+
+    private boolean handleEscapeSequence(int code) {
+        return switch (code) {
+            case 'C' -> { // Right arrow
+                tabsState.selectNext(TAB_NAMES.length);
+                yield true;
+            }
+            case 'D' -> { // Left arrow
+                tabsState.selectPrevious(TAB_NAMES.length);
+                yield true;
+            }
+            case 'Z' -> { // Shift+Tab (backtab)
+                tabsState.selectPrevious(TAB_NAMES.length);
+                yield true;
+            }
+            default -> false;
+        };
+    }
+
+    private void ui(Frame frame) {
+        Rect area = frame.area();
+
+        List<Rect> layout = Layout.vertical()
+            .constraints(
+                Constraint.length(3),  // Header
+                Constraint.length(3),  // Tabs
+                Constraint.fill(),     // Content
+                Constraint.length(3)   // Footer
+            )
+            .split(area);
+
+        renderHeader(frame, layout.get(0));
+        renderTabs(frame, layout.get(1));
+        renderContent(frame, layout.get(2));
+        renderFooter(frame, layout.get(3));
+    }
+
+    private void renderHeader(Frame frame, Rect area) {
+        Block headerBlock = Block.builder()
+            .borders(Borders.ALL)
+            .borderType(BorderType.ROUNDED)
+            .borderStyle(Style.EMPTY.fg(Color.CYAN))
+            .title(Title.from(
+                Line.from(
+                    Span.raw(" Glimt ").bold().cyan(),
+                    Span.raw("Tabs Demo ").yellow()
+                )
+            ).centered())
+            .build();
+
+        frame.renderWidget(headerBlock, area);
+    }
+
+    private void renderTabs(Frame frame, Rect area) {
+        // Create styled tab titles
+        Line[] tabLines = new Line[TAB_NAMES.length];
+        for (int i = 0; i < TAB_NAMES.length; i++) {
+            String number = String.valueOf(i + 1);
+            tabLines[i] = Line.from(
+                Span.raw(number).dim(),
+                Span.raw(":"),
+                Span.raw(TAB_NAMES[i])
+            );
+        }
+
+        Tabs tabs = Tabs.builder()
+            .titles(tabLines)
+            .highlightStyle(Style.EMPTY.fg(Color.YELLOW).bold())
+            .style(Style.EMPTY.fg(Color.WHITE))
+            .divider(Span.raw(" │ ").fg(Color.DARK_GRAY))
+            .padding(" ", " ")
+            .block(Block.builder()
+                .borders(Borders.ALL)
+                .borderType(BorderType.ROUNDED)
+                .borderStyle(Style.EMPTY.fg(Color.GREEN))
+                .build())
+            .build();
+
+        frame.renderStatefulWidget(tabs, area, tabsState);
+    }
+
+    private void renderContent(Frame frame, Rect area) {
+        Integer selected = tabsState.selected();
+        int tabIndex = selected != null ? selected : 0;
+
+        String[] content = TAB_CONTENT[tabIndex];
+        Text contentText = Text.from(String.join("\n", content));
+
+        // Color based on selected tab
+        Color borderColor = switch (tabIndex) {
+            case 0 -> Color.CYAN;
+            case 1 -> Color.YELLOW;
+            case 2 -> Color.MAGENTA;
+            case 3 -> Color.GREEN;
+            default -> Color.WHITE;
+        };
+
+        Paragraph paragraph = Paragraph.builder()
+            .text(contentText)
+            .block(Block.builder()
+                .borders(Borders.ALL)
+                .borderType(BorderType.ROUNDED)
+                .borderStyle(Style.EMPTY.fg(borderColor))
+                .title(Title.from(
+                    Line.from(
+                        Span.raw(" "),
+                        Span.raw(TAB_NAMES[tabIndex]).fg(borderColor).bold(),
+                        Span.raw(" ")
+                    )
+                ))
+                .build())
+            .build();
+
+        frame.renderWidget(paragraph, area);
+    }
+
+    private void renderFooter(Frame frame, Rect area) {
+        Line helpLine = Line.from(
+            Span.raw(" Tab/→").bold().yellow(),
+            Span.raw(" Next  ").dim(),
+            Span.raw("←/Shift+Tab").bold().yellow(),
+            Span.raw(" Prev  ").dim(),
+            Span.raw("1-4").bold().yellow(),
+            Span.raw(" Jump  ").dim(),
+            Span.raw("q").bold().yellow(),
+            Span.raw(" Quit").dim()
+        );
+
+        Paragraph footer = Paragraph.builder()
+            .text(Text.from(helpLine))
+            .block(Block.builder()
+                .borders(Borders.ALL)
+                .borderType(BorderType.ROUNDED)
+                .borderStyle(Style.EMPTY.fg(Color.DARK_GRAY))
+                .build())
+            .build();
+
+        frame.renderWidget(footer, area);
+    }
+}

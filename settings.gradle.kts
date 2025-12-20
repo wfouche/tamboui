@@ -1,12 +1,12 @@
-rootProject.name = "jratatui-parent"
+rootProject.name = "glimt-parent"
 
 include(
-    "jratatui-core",
-    "jratatui-widgets",
-    "jratatui-jline",
-    "jratatui-tui",
-    "jratatui-picocli",
-    "jratatui-dsl"
+    "glimt-core",
+    "glimt-widgets",
+    "glimt-jline",
+    "glimt-tui",
+    "glimt-picocli",
+    "glimt-dsl"
 )
 
 File("demos").listFiles()?.forEach {

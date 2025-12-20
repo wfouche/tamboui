@@ -1,9 +1,9 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
 description = "Demo showcasing the Canvas widget for arbitrary shape drawing"
 
 application {
-    mainClass.set("io.github.jratatui.demo.CanvasDemo")
+    mainClass.set("ink.glimt.demo.CanvasDemo")
 }

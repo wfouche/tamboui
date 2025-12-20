@@ -1,0 +1,395 @@
+/*
+ * Copyright (c) 2025 Glimt Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package ink.glimt.widgets.table;
+
+import ink.glimt.buffer.Buffer;
+import ink.glimt.layout.Constraint;
+import ink.glimt.layout.Layout;
+import ink.glimt.layout.Rect;
+import ink.glimt.style.Style;
+import ink.glimt.text.Line;
+import ink.glimt.text.Text;
+import ink.glimt.text.Span;
+import ink.glimt.widgets.StatefulWidget;
+import ink.glimt.widgets.block.Block;
+import static ink.glimt.util.CollectionUtil.listCopyOf;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * A table widget for displaying data in rows and columns.
+ * <p>
+ * The table supports optional header and footer rows, column width constraints,
+ * row selection with highlighting, and scrolling for large datasets.
+ *
+ * <pre>{@code
+ * Table table = Table.builder()
+ *     .header(Row.from("Name", "Age", "City").style(Style.EMPTY.bold()))
+ *     .rows(List.of(
+ *         Row.from("Alice", "30", "New York"),
+ *         Row.from("Bob", "25", "Los Angeles"),
+ *         Row.from("Charlie", "35", "Chicago")
+ *     ))
+ *     .widths(
+ *         Constraint.percentage(40),
+ *         Constraint.length(10),
+ *         Constraint.fill()
+ *     )
+ *     .highlightStyle(Style.EMPTY.bg(Color.BLUE))
+ *     .highlightSymbol(">> ")
+ *     .block(Block.bordered().title("Users"))
+ *     .build();
+ *
+ * frame.renderStatefulWidget(table, area, tableState);
+ * }</pre>
+ */
+public final class Table implements StatefulWidget<TableState> {
+
+    private final List<Row> rows;
+    private final List<Constraint> widths;
+    private final Optional<Row> header;
+    private final Optional<Row> footer;
+    private final Optional<Block> block;
+    private final Style style;
+    private final Style rowHighlightStyle;
+    private final String highlightSymbol;
+    private final int columnSpacing;
+    private final HighlightSpacing highlightSpacing;
+
+    private Table(Builder builder) {
+        this.rows = listCopyOf(builder.rows);
+        this.widths = listCopyOf(builder.widths);
+        this.header = Optional.ofNullable(builder.header);
+        this.footer = Optional.ofNullable(builder.footer);
+        this.block = Optional.ofNullable(builder.block);
+        this.style = builder.style;
+        this.rowHighlightStyle = builder.rowHighlightStyle;
+        this.highlightSymbol = builder.highlightSymbol;
+        this.columnSpacing = builder.columnSpacing;
+        this.highlightSpacing = builder.highlightSpacing;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Returns the rows in this table.
+     */
+    public List<Row> rows() {
+        return rows;
+    }
+
+    @Override
+    public void render(Rect area, Buffer buffer, TableState state) {
+        if (area.isEmpty()) {
+            return;
+        }
+
+        // Apply background style
+        buffer.setStyle(area, style);
+
+        // Render block if present
+        Rect tableArea = area;
+        if (block.isPresent()) {
+            block.get().render(area, buffer);
+            tableArea = block.get().inner(area);
+        }
+
+        if (tableArea.isEmpty() || widths.isEmpty()) {
+            return;
+        }
+
+        // Calculate column widths
+        int highlightWidth = calculateHighlightWidth(state);
+        int availableWidth = tableArea.width() - highlightWidth;
+        if (availableWidth <= 0) {
+            return;
+        }
+
+        // Account for column spacing
+        int totalSpacing = columnSpacing * Math.max(0, widths.size() - 1);
+        availableWidth = Math.max(0, availableWidth - totalSpacing);
+
+        List<Integer> columnWidths = calculateColumnWidths(availableWidth);
+
+        // Ensure selected row is visible
+        if (state.selected() != null) {
+            int visibleHeight = tableArea.height();
+            if (header.isPresent()) {
+                visibleHeight -= header.get().totalHeight();
+            }
+            if (footer.isPresent()) {
+                visibleHeight -= footer.get().totalHeight();
+            }
+            state.scrollToSelected(visibleHeight, rows);
+        }
+
+        int y = tableArea.top();
+
+        // Render header
+        if (header.isPresent()) {
+            y = renderRow(buffer, tableArea, y, header.get(), columnWidths, highlightWidth, false, Style.EMPTY);
+        }
+
+        // Calculate available height for data rows
+        int dataHeight = tableArea.bottom() - y;
+        if (footer.isPresent()) {
+            dataHeight -= footer.get().totalHeight();
+        }
+
+        // Render data rows
+        int offset = state.offset();
+        int currentOffset = 0;
+
+        for (int i = 0; i < rows.size() && y < tableArea.top() + tableArea.height() - (footer.isPresent() ? footer.get().totalHeight() : 0); i++) {
+            Row row = rows.get(i);
+            int rowHeight = row.totalHeight();
+
+            // Skip rows before visible area
+            if (currentOffset + rowHeight <= offset) {
+                currentOffset += rowHeight;
+                continue;
+            }
+
+            boolean isSelected = state.selected() != null && state.selected() == i;
+            Style highlightStyle = isSelected ? rowHighlightStyle : Style.EMPTY;
+
+            // Render highlight symbol
+            if (isSelected && highlightWidth > 0) {
+                buffer.setString(tableArea.left(), y, highlightSymbol, rowHighlightStyle);
+            }
+
+            y = renderRow(buffer, tableArea, y, row, columnWidths, highlightWidth, isSelected, highlightStyle);
+            currentOffset += rowHeight;
+        }
+
+        // Render footer at the bottom
+        if (footer.isPresent()) {
+            int footerY = tableArea.bottom() - footer.get().totalHeight();
+            renderRow(buffer, tableArea, footerY, footer.get(), columnWidths, highlightWidth, false, Style.EMPTY);
+        }
+    }
+
+    private int calculateHighlightWidth(TableState state) {
+        switch (highlightSpacing) {
+            case ALWAYS:
+                return highlightSymbol.length();
+            case WHEN_SELECTED:
+                return state.selected() != null ? highlightSymbol.length() : 0;
+            case NEVER:
+            default:
+                return 0;
+        }
+    }
+
+    private List<Integer> calculateColumnWidths(int availableWidth) {
+        // Use Layout to calculate column widths based on constraints
+        Rect fakeArea = new Rect(0, 0, availableWidth, 1);
+        List<Rect> columnRects = Layout.horizontal()
+            .constraints(widths)
+            .split(fakeArea);
+
+        List<Integer> widthList = new ArrayList<>(columnRects.size());
+        for (Rect rect : columnRects) {
+            widthList.add(rect.width());
+        }
+        return widthList;
+    }
+
+    private int renderRow(Buffer buffer, Rect tableArea, int y, Row row,
+                          List<Integer> columnWidths, int highlightWidth,
+                          boolean isSelected, Style highlightStyle) {
+        int rowHeight = row.height();
+        Style rowStyle = row.style().patch(highlightStyle);
+
+        // Apply row style to the entire row area
+        if (!rowStyle.equals(Style.EMPTY)) {
+            Rect rowArea = new Rect(tableArea.left() + highlightWidth, y,
+                                    tableArea.width() - highlightWidth, rowHeight);
+            buffer.setStyle(rowArea, rowStyle);
+        }
+
+        int x = tableArea.left() + highlightWidth;
+        List<Cell> cells = row.cells();
+
+        for (int col = 0; col < columnWidths.size(); col++) {
+            int colWidth = columnWidths.get(col);
+
+            if (col < cells.size()) {
+                Cell cell = cells.get(col);
+                Style cellStyle = rowStyle.patch(cell.style());
+                Text content = cell.content();
+
+                // Render each line of the cell
+                List<Line> lines = content.lines();
+                for (int lineIdx = 0; lineIdx < Math.min(lines.size(), rowHeight); lineIdx++) {
+                    Line line = lines.get(lineIdx);
+                    int lineY = y + lineIdx;
+                    if (lineY >= tableArea.bottom()) {
+                        break;
+                    }
+
+                    // Render line content, truncated to column width
+                    int col_x = x;
+                    List<Span> patchedSpans = line.patchStyle(cellStyle).spans();
+                    for (int spanIdx = 0; spanIdx < patchedSpans.size(); spanIdx++) {
+                        Span span = patchedSpans.get(spanIdx);
+                        String text = span.content();
+                        int remainingWidth = Math.min(text.length(), colWidth - (col_x - x));
+                        if (remainingWidth > 0) {
+                            buffer.setString(col_x, lineY, text.substring(0, remainingWidth), span.style());
+                            col_x += remainingWidth;
+                        }
+                    }
+                }
+            }
+
+            x += colWidth + columnSpacing;
+        }
+
+        return y + rowHeight + row.bottomMargin();
+    }
+
+    /**
+     * Controls when space is allocated for the highlight symbol.
+     */
+    public enum HighlightSpacing {
+        /** Always allocate space for the highlight symbol. */
+        ALWAYS,
+        /** Only allocate space when a row is selected. */
+        WHEN_SELECTED,
+        /** Never allocate space for the highlight symbol. */
+        NEVER
+    }
+
+    public static final class Builder {
+        private List<Row> rows = new ArrayList<>();
+        private List<Constraint> widths = new ArrayList<>();
+        private Row header;
+        private Row footer;
+        private Block block;
+        private Style style = Style.EMPTY;
+        private Style rowHighlightStyle = Style.EMPTY.reversed();
+        private String highlightSymbol = ">> ";
+        private int columnSpacing = 1;
+        private HighlightSpacing highlightSpacing = HighlightSpacing.WHEN_SELECTED;
+
+        private Builder() {}
+
+        /**
+         * Sets the data rows.
+         */
+        public Builder rows(List<Row> rows) {
+            this.rows = new ArrayList<>(rows);
+            return this;
+        }
+
+        /**
+         * Sets the data rows.
+         */
+        public Builder rows(Row... rows) {
+            this.rows = new ArrayList<>(Arrays.asList(rows));
+            return this;
+        }
+
+        /**
+         * Adds a row.
+         */
+        public Builder addRow(Row row) {
+            this.rows.add(row);
+            return this;
+        }
+
+        /**
+         * Sets the column width constraints.
+         * <p>
+         * This is required - columns will have 0 width without constraints.
+         */
+        public Builder widths(List<Constraint> widths) {
+            this.widths = new ArrayList<>(widths);
+            return this;
+        }
+
+        /**
+         * Sets the column width constraints.
+         */
+        public Builder widths(Constraint... widths) {
+            this.widths = new ArrayList<>(Arrays.asList(widths));
+            return this;
+        }
+
+        /**
+         * Sets the header row.
+         */
+        public Builder header(Row header) {
+            this.header = header;
+            return this;
+        }
+
+        /**
+         * Sets the footer row.
+         */
+        public Builder footer(Row footer) {
+            this.footer = footer;
+            return this;
+        }
+
+        /**
+         * Wraps the table in a block.
+         */
+        public Builder block(Block block) {
+            this.block = block;
+            return this;
+        }
+
+        /**
+         * Sets the base style.
+         */
+        public Builder style(Style style) {
+            this.style = style;
+            return this;
+        }
+
+        /**
+         * Sets the style for the selected row.
+         */
+        public Builder highlightStyle(Style style) {
+            this.rowHighlightStyle = style;
+            return this;
+        }
+
+        /**
+         * Sets the symbol displayed before the selected row.
+         */
+        public Builder highlightSymbol(String symbol) {
+            this.highlightSymbol = symbol != null ? symbol : "";
+            return this;
+        }
+
+        /**
+         * Sets the spacing between columns.
+         */
+        public Builder columnSpacing(int spacing) {
+            this.columnSpacing = Math.max(0, spacing);
+            return this;
+        }
+
+        /**
+         * Sets when to allocate space for the highlight symbol.
+         */
+        public Builder highlightSpacing(HighlightSpacing spacing) {
+            this.highlightSpacing = spacing;
+            return this;
+        }
+
+        public Table build() {
+            return new Table(this);
+        }
+    }
+}

@@ -1,10 +1,10 @@
-//DEPS io.github.jratatui:jratatui-dsl:LATEST
+//DEPS ink.glimt:glimt-dsl:LATEST
 //JAVA 11+
 
-import io.github.jratatui.tui.TuiRunner;
-import io.github.jratatui.tui.Keys;
-import io.github.jratatui.widgets.paragraph.Paragraph;
-import io.github.jratatui.text.Text;
+import ink.glimt.tui.TuiRunner;
+import ink.glimt.tui.Keys;
+import ink.glimt.widgets.paragraph.Paragraph;
+import ink.glimt.text.Text;
 
 public class HelloWorld {
     public static void main(String[] args) throws Exception {
@@ -19,7 +19,7 @@ public class HelloWorld {
                 },
                 frame -> {
                     var paragraph = Paragraph.builder()
-                        .text(Text.from("Hello, JRatatui! Press 'q' to quit."))
+                        .text(Text.from("Hello, Glimt! Press 'q' to quit."))
                         .build();
                     frame.renderWidget(paragraph, frame.area());
                 }

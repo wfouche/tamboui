@@ -1,13 +1,13 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
 description = "JTop - System monitor demo using the DSL module"
 
 dependencies {
-    implementation(projects.jratatuiDsl)
+    implementation(projects.glimtDsl)
 }
 
 application {
-    mainClass.set("io.github.jratatui.demo.JTopDemo")
+    mainClass.set("ink.glimt.demo.JTopDemo")
 }

@@ -1,16 +1,16 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
-description = "Demo showcasing PicoCLI integration with JRatatui"
+description = "Demo showcasing PicoCLI integration with Glimt"
 
 dependencies {
-    implementation(projects.jratatuiPicocli)
+    implementation(projects.glimtPicocli)
     annotationProcessor(libs.picocli.codegen)
 }
 
 application {
-    mainClass.set("io.github.jratatui.demo.PicoCLIDemo")
+    mainClass.set("ink.glimt.demo.PicoCLIDemo")
 }
 
 tasks.withType<JavaCompile> {

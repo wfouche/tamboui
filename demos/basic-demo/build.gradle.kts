@@ -1,10 +1,10 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
-description = "Demo TUI application using JRatatui"
+description = "Demo TUI application using Glimt"
 
 application {
-    mainClass.set("io.github.jratatui.demo.Demo")
+    mainClass.set("ink.glimt.demo.Demo")
 }
 

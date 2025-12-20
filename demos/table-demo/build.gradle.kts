@@ -1,9 +1,9 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
 description = "Demo showcasing the Table widget"
 
 application {
-    mainClass.set("io.github.jratatui.demo.TableDemo")
+    mainClass.set("ink.glimt.demo.TableDemo")
 }

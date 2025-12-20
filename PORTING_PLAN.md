@@ -1,4 +1,4 @@
-# JRatatui: Pure Java Port of Ratatui
+# Glimt: Pure Java Port of Ratatui
 
 A comprehensive plan for creating a pure Java port of [ratatui](https://github.com/ratatui/ratatui), the Rust TUI library.
 
@@ -547,7 +547,7 @@ public class Terminal<B extends Backend> implements AutoCloseable {
 | `Block` | Stateless | ✅ Done | Container with borders and titles |
 | `Paragraph` | Stateless | ✅ Done | Multi-line styled/wrapped text |
 | `List` | Stateful | ✅ Done | Scrollable items with selection |
-| `TextInput` | Stateful | ✅ Done | Single-line text input (JRatatui addition) |
+| `TextInput` | Stateful | ✅ Done | Single-line text input (Glimt addition) |
 | `Clear` | Stateless | ✅ Done | Clears area (for layering widgets) |
 | `Gauge` | Stateless | ✅ Done | Progress percentage display |
 | `LineGauge` | Stateless | ✅ Done | Progress as line |
@@ -1044,14 +1044,14 @@ public class ConstraintSolver {
 ## 7. Project Structure
 
 ```
-jratatui/
+glimt/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── gradle.properties
-├── jratatui-core/
+├── glimt-core/
 │   ├── build.gradle.kts
 │   └── src/
-│       ├── main/java/io/github/jratatui/
+│       ├── main/java/io/github/glimt/
 │       │   ├── buffer/
 │       │   │   ├── Buffer.java
 │       │   │   ├── Cell.java
@@ -1087,9 +1087,9 @@ jratatui/
 │       │       ├── StatefulWidget.java
 │       │       └── Widget.java
 │       └── test/java/...
-├── jratatui-widgets/
+├── glimt-widgets/
 │   ├── build.gradle.kts
-│   └── src/main/java/io/github/jratatui/widgets/
+│   └── src/main/java/io/github/glimt/widgets/
 │       ├── block/
 │       │   ├── Block.java
 │       │   ├── Border.java
@@ -1144,13 +1144,13 @@ jratatui/
 │       │   ├── Tabs.java
 │       │   └── TabsState.java
 │       └── Clear.java
-├── jratatui-jline/
+├── glimt-jline/
 │   ├── build.gradle.kts
-│   └── src/main/java/io/github/jratatui/backend/jline/
+│   └── src/main/java/io/github/glimt/backend/jline/
 │       └── JLineBackend.java
-├── jratatui-tui/             # High-level TUI framework
+├── glimt-tui/             # High-level TUI framework
 │   ├── build.gradle.kts
-│   └── src/main/java/io/github/jratatui/tui/
+│   └── src/main/java/io/github/glimt/tui/
 │       ├── TuiRunner.java           # Main runner with event loop
 │       ├── TuiConfig.java           # Configuration with builder
 │       ├── EventHandler.java        # Event handler interface
@@ -1167,15 +1167,15 @@ jratatui/
 │           ├── ResizeEvent.java     # Terminal resize
 │           ├── TickEvent.java       # Animation ticks
 │           └── EventParser.java     # Parses escape sequences
-├── jratatui-picocli/         # Optional PicoCLI integration
+├── glimt-picocli/         # Optional PicoCLI integration
 │   ├── build.gradle.kts
-│   └── src/main/java/io/github/jratatui/picocli/
+│   └── src/main/java/io/github/glimt/picocli/
 │       ├── TuiCommand.java          # Base class for TUI commands
 │       └── TuiMixin.java            # Mixin for TUI options
 └── demos/
     ├── basic-demo/
     │   ├── build.gradle.kts
-    │   └── src/main/java/io/github/jratatui/demo/
+    │   └── src/main/java/io/github/glimt/demo/
     │       └── Demo.java
     ├── tui-demo/             # TuiRunner framework demo
     │   └── ...
@@ -1214,12 +1214,12 @@ Demo projects are automatically discovered by the build system. To add a new dem
 ### settings.gradle.kts
 
 ```kotlin
-rootProject.name = "jratatui-parent"
+rootProject.name = "glimt-parent"
 
 include(
-    "jratatui-core",
-    "jratatui-widgets",
-    "jratatui-jline"
+    "glimt-core",
+    "glimt-widgets",
+    "glimt-jline"
 )
 
 // Auto-discover demo projects
@@ -1242,7 +1242,7 @@ plugins {
 }
 
 allprojects {
-    group = "io.github.jratatui"
+    group = "io.github.glimt"
     version = "0.1.0-SNAPSHOT"
 
     repositories {
@@ -1290,14 +1290,14 @@ subprojects {
 }
 ```
 
-### jratatui-core/build.gradle.kts
+### glimt-core/build.gradle.kts
 
 ```kotlin
 plugins {
     `java-library`
 }
 
-description = "Core types and abstractions for JRatatui TUI library"
+description = "Core types and abstractions for Glimt TUI library"
 
 dependencies {
     // Minimal dependencies for core module
@@ -1306,31 +1306,31 @@ dependencies {
 }
 ```
 
-### jratatui-widgets/build.gradle.kts
+### glimt-widgets/build.gradle.kts
 
 ```kotlin
 plugins {
     `java-library`
 }
 
-description = "Standard widgets for JRatatui TUI library"
+description = "Standard widgets for Glimt TUI library"
 
 dependencies {
-    api(project(":jratatui-core"))
+    api(project(":glimt-core"))
 }
 ```
 
-### jratatui-jline/build.gradle.kts
+### glimt-jline/build.gradle.kts
 
 ```kotlin
 plugins {
     `java-library`
 }
 
-description = "JLine 3 backend for JRatatui TUI library"
+description = "JLine 3 backend for Glimt TUI library"
 
 dependencies {
-    api(project(":jratatui-core"))
+    api(project(":glimt-core"))
     implementation("org.jline:jline:3.25.1")
 }
 ```
@@ -1339,13 +1339,13 @@ dependencies {
 
 ```kotlin
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("io.github.glimt.demo-project")
 }
 
-description = "Demo TUI application using JRatatui"
+description = "Demo TUI application using Glimt"
 
 application {
-    mainClass.set("io.github.jratatui.demo.Demo")
+    mainClass.set("io.github.glimt.demo.Demo")
 }
 ```
 
@@ -1355,7 +1355,7 @@ application {
 
 ### Testing Framework: JUnit 5 + AssertJ
 
-JRatatui uses JUnit Jupiter for unit testing with AssertJ for fluent assertions.
+Glimt uses JUnit Jupiter for unit testing with AssertJ for fluent assertions.
 
 #### Dependencies (gradle/libs.versions.toml)
 
@@ -1393,16 +1393,16 @@ subprojects {
 
 | Module | Test Focus |
 |--------|------------|
-| `jratatui-core` | Layout calculations, buffer operations, style merging, constraint solving |
-| `jratatui-widgets` | Widget rendering to buffer, border calculations, text wrapping |
-| `jratatui-jline` | Backend integration tests (may require mocking terminal) |
+| `glimt-core` | Layout calculations, buffer operations, style merging, constraint solving |
+| `glimt-widgets` | Widget rendering to buffer, border calculations, text wrapping |
+| `glimt-jline` | Backend integration tests (may require mocking terminal) |
 
 ### Example Tests
 
-#### Rect Tests (jratatui-core)
+#### Rect Tests (glimt-core)
 
 ```java
-package io.github.jratatui.layout;
+package io.github.glimt.layout;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -1444,13 +1444,13 @@ class RectTest {
 }
 ```
 
-#### Buffer Tests (jratatui-core)
+#### Buffer Tests (glimt-core)
 
 ```java
-package io.github.jratatui.buffer;
+package io.github.glimt.buffer;
 
-import io.github.jratatui.layout.Rect;
-import io.github.jratatui.style.Style;
+import io.github.glimt.layout.Rect;
+import io.github.glimt.style.Style;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
@@ -1479,13 +1479,13 @@ class BufferTest {
 }
 ```
 
-#### Widget Tests (jratatui-widgets)
+#### Widget Tests (glimt-widgets)
 
 ```java
-package io.github.jratatui.widgets.block;
+package io.github.glimt.widgets.block;
 
-import io.github.jratatui.buffer.Buffer;
-import io.github.jratatui.layout.Rect;
+import io.github.glimt.buffer.Buffer;
+import io.github.glimt.layout.Rect;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
@@ -1521,9 +1521,9 @@ class BlockTest {
 
 | Module | Target Coverage |
 |--------|-----------------|
-| `jratatui-core` | 90%+ (core logic) |
-| `jratatui-widgets` | 80%+ (rendering logic) |
-| `jratatui-jline` | 60%+ (integration tests) |
+| `glimt-core` | 90%+ (core logic) |
+| `glimt-widgets` | 80%+ (rendering logic) |
+| `glimt-jline` | 60%+ (integration tests) |
 
 ---
 
@@ -1589,7 +1589,7 @@ class BlockTest {
 
 ### Phase 7: Interactive Widgets ✅ COMPLETE
 - [x] `List` with `ListState`
-- [x] `TextInput` with `TextInputState` (JRatatui addition)
+- [x] `TextInput` with `TextInputState` (Glimt addition)
 - [x] `Table` with `TableState`
 - [x] `Tabs` with `TabsState`
 - [x] `Scrollbar` with `ScrollbarState`
@@ -1609,11 +1609,11 @@ class BlockTest {
 - [ ] Mouse event handling in widgets
 
 ### Phase 9.5: High-Level TUI Framework ✅ COMPLETE
-- [x] `jratatui-tui` module with TuiRunner, TuiConfig, event handling
+- [x] `glimt-tui` module with TuiRunner, TuiConfig, event handling
 - [x] Event hierarchy (KeyEvent, MouseEvent, ResizeEvent, TickEvent)
 - [x] EventParser for escape sequences and mouse events
 - [x] Keys utility class for vim-style navigation helpers
-- [x] `jratatui-picocli` module for optional PicoCLI integration
+- [x] `glimt-picocli` module for optional PicoCLI integration
 - [x] TuiCommand base class and TuiMixin for CLI options
 - [x] Demo applications (tui-demo, picocli-demo)
 
@@ -1625,9 +1625,9 @@ class BlockTest {
 - [ ] TextInput widget tests (when implemented)
 
 **Test Summary:**
-- jratatui-core: 81 tests passing
-- jratatui-widgets: 381 tests passing (includes Calendar: 26 tests)
-- jratatui-tui: 51 tests passing (event types, Keys helpers, TuiConfig)
+- glimt-core: 81 tests passing
+- glimt-widgets: 381 tests passing (includes Calendar: 26 tests)
+- glimt-tui: 51 tests passing (event types, Keys helpers, TuiConfig)
 
 ### Phase 11: Polish & Documentation ❌ TODO
 - [ ] Comprehensive Javadoc
@@ -1641,16 +1641,16 @@ class BlockTest {
 ## 13. Example Application
 
 ```java
-package io.github.jratatui.examples;
+package io.github.glimt.examples;
 
-import io.github.jratatui.backend.jline.JLineBackend;
-import io.github.jratatui.layout.*;
-import io.github.jratatui.style.*;
-import io.github.jratatui.terminal.*;
-import io.github.jratatui.text.*;
-import io.github.jratatui.widgets.*;
-import io.github.jratatui.widgets.block.*;
-import io.github.jratatui.widgets.paragraph.*;
+import io.github.glimt.backend.jline.JLineBackend;
+import io.github.glimt.layout.*;
+import io.github.glimt.style.*;
+import io.github.glimt.terminal.*;
+import io.github.glimt.text.*;
+import io.github.glimt.widgets.*;
+import io.github.glimt.widgets.block.*;
+import io.github.glimt.widgets.paragraph.*;
 
 import java.io.IOException;
 
@@ -1661,7 +1661,7 @@ public class HelloWorld {
 
             terminal.draw(frame -> {
                 var greeting = Paragraph.builder()
-                    .text(Text.from("Hello, JRatatui!"))
+                    .text(Text.from("Hello, Glimt!"))
                     .block(Block.bordered()
                         .title(Title.from("Welcome"))
                         .borderStyle(Style.EMPTY.fg(Color.CYAN)))

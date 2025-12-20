@@ -1,10 +1,10 @@
-# JRatatui
+# Glimt
 
 A pure Java port of [ratatui](https://github.com/ratatui/ratatui), the Rust library for building terminal user interfaces.
 
 ## Overview
 
-JRatatui brings the immediate-mode TUI paradigm from Rust to the Java ecosystem. It provides a comprehensive set of widgets and a layout system for building rich terminal applications with modern Java idioms.
+Glimt brings the immediate-mode TUI paradigm from Rust to the Java ecosystem. It provides a comprehensive set of widgets and a layout system for building rich terminal applications with modern Java idioms.
 
 ### Key Features
 
@@ -21,12 +21,12 @@ JRatatui brings the immediate-mode TUI paradigm from Rust to the Java ecosystem.
 
 | Module | Description |
 |--------|-------------|
-| `jratatui-core` | Core types: Buffer, Cell, Rect, Style, Layout, Text primitives |
-| `jratatui-widgets` | All widget implementations (see below) |
-| `jratatui-jline` | JLine 3 terminal backend |
-| `jratatui-tui` | High-level TUI framework with TuiRunner, event handling, and key helpers |
-| `jratatui-dsl` | Fluent DSL for declarative UI construction with components and focus management |
-| `jratatui-picocli` | Optional PicoCLI integration for CLI argument parsing |
+| `glimt-core` | Core types: Buffer, Cell, Rect, Style, Layout, Text primitives |
+| `glimt-widgets` | All widget implementations (see below) |
+| `glimt-jline` | JLine 3 terminal backend |
+| `glimt-tui` | High-level TUI framework with TuiRunner, event handling, and key helpers |
+| `glimt-dsl` | Fluent DSL for declarative UI construction with components and focus management |
+| `glimt-picocli` | Optional PicoCLI integration for CLI argument parsing |
 | `demos/*` | Demo applications showcasing widgets and features |
 
 ## Requirements
@@ -38,14 +38,14 @@ JRatatui brings the immediate-mode TUI paradigm from Rust to the Java ecosystem.
 
 ### Using TuiRunner (Recommended)
 
-The `jratatui-tui` module provides a high-level framework that eliminates boilerplate:
+The `glimt-tui` module provides a high-level framework that eliminates boilerplate:
 
 [examples/HelloWorld.java](examples/HelloWorld.java):
 ```java
-import io.github.jratatui.tui.TuiRunner;
-import io.github.jratatui.tui.Keys;
-import io.github.jratatui.widgets.paragraph.Paragraph;
-import io.github.jratatui.text.Text;
+import io.github.glimt.tui.TuiRunner;
+import io.github.glimt.tui.Keys;
+import io.github.glimt.widgets.paragraph.Paragraph;
+import io.github.glimt.text.Text;
 
 public class HelloWorld {
     public static void main(String[] args) throws Exception {
@@ -60,7 +60,7 @@ public class HelloWorld {
                 },
                 frame -> {
                     var paragraph = Paragraph.builder()
-                        .text(Text.from("Hello, JRatatui! Press 'q' to quit."))
+                        .text(Text.from("Hello, Glimt! Press 'q' to quit."))
                         .build();
                     frame.renderWidget(paragraph, frame.area());
                 }
@@ -74,8 +74,8 @@ public class HelloWorld {
 
 
 ```java
-import io.github.jratatui.tui.TuiConfig;
-import io.github.jratatui.tui.TuiRunner;
+import io.github.glimt.tui.TuiConfig;
+import io.github.glimt.tui.TuiRunner;
 import java.time.Duration;
 
 var config = TuiConfig.builder()
@@ -99,7 +99,7 @@ try (var tui = TuiRunner.create(config)) {
 ### With PicoCLI Integration
 
 ```java
-import io.github.jratatui.picocli.TuiCommand;
+import io.github.glimt.picocli.TuiCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -123,19 +123,19 @@ public class MyApp extends TuiCommand {
 
 ### Using the DSL (Declarative)
 
-The `jratatui-dsl` module provides a fluent DSL for declarative UI construction:
+The `glimt-dsl` module provides a fluent DSL for declarative UI construction:
 
 ```java
-import static io.github.jratatui.dsl.Dsl.*;
-import io.github.jratatui.dsl.app.DslApp;
-import io.github.jratatui.dsl.element.Element;
+import static io.github.glimt.dsl.Dsl.*;
+import io.github.glimt.dsl.app.DslApp;
+import io.github.glimt.dsl.element.Element;
 
 public class HelloDsl extends DslApp {
 
     @Override
     protected Element render() {
         return panel("Hello",
-            text("Welcome to JRatatui DSL!").bold().cyan(),
+            text("Welcome to Glimt DSL!").bold().cyan(),
             spacer(),
             text("Press 'q' to quit").dim()
         ).rounded();
@@ -230,8 +230,8 @@ canvas(-10, 10, -10, 10)
 For more control, use the terminal directly:
 
 ```java
-import io.github.jratatui.backend.jline.JLineBackend;
-import io.github.jratatui.terminal.Terminal;
+import io.github.glimt.backend.jline.JLineBackend;
+import io.github.glimt.terminal.Terminal;
 
 try (var backend = new JLineBackend()) {
     backend.enableRawMode();
@@ -319,7 +319,7 @@ All standard ratatui widgets are implemented:
 | **Calendar** | Stateless | Monthly calendar with date styling |
 | **Scrollbar** | Stateful | Visual scroll position indicator |
 | **Clear** | Stateless | Clears an area (for widget layering) |
-| **TextInput** | Stateful | Single-line text input (JRatatui addition) |
+| **TextInput** | Stateful | Single-line text input (Glimt addition) |
 
 ## Demo Applications
 
@@ -345,7 +345,7 @@ All standard ratatui widgets are implemented:
 The `Keys` class provides helpers for common key patterns:
 
 ```java
-import static io.github.jratatui.tui.Keys.*;
+import static io.github.glimt.tui.Keys.*;
 
 // Quit patterns
 isQuit(event)      // q, Q, or Ctrl+C

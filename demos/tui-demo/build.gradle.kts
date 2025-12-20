@@ -1,13 +1,13 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
 description = "Demo showcasing the TuiRunner framework"
 
 dependencies {
-    implementation(projects.jratatuiTui)
+    implementation(projects.glimtTui)
 }
 
 application {
-    mainClass.set("io.github.jratatui.demo.TuiDemo")
+    mainClass.set("ink.glimt.demo.TuiDemo")
 }

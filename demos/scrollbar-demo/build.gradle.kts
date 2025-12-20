@@ -1,9 +1,9 @@
 plugins {
-    id("io.github.jratatui.demo-project")
+    id("ink.glimt.demo-project")
 }
 
 description = "Demo showcasing the Scrollbar widget"
 
 application {
-    mainClass.set("io.github.jratatui.demo.ScrollbarDemo")
+    mainClass.set("ink.glimt.demo.ScrollbarDemo")
 }

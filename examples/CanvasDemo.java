@@ -1,26 +1,26 @@
-//DEPS io.github.jratatui:jratatui-dsl:LATEST
+//DEPS ink.glimt:glimt-dsl:LATEST
 
-import io.github.jratatui.backend.jline.JLineBackend;
-import io.github.jratatui.layout.Constraint;
-import io.github.jratatui.layout.Layout;
-import io.github.jratatui.layout.Rect;
-import io.github.jratatui.style.Color;
-import io.github.jratatui.style.Style;
-import io.github.jratatui.terminal.Frame;
-import io.github.jratatui.terminal.Terminal;
-import io.github.jratatui.text.Line;
-import io.github.jratatui.text.Span;
-import io.github.jratatui.text.Text;
-import io.github.jratatui.widgets.block.Block;
-import io.github.jratatui.widgets.block.BorderType;
-import io.github.jratatui.widgets.block.Borders;
-import io.github.jratatui.widgets.block.Title;
-import io.github.jratatui.widgets.canvas.Canvas;
-import io.github.jratatui.widgets.canvas.Marker;
-import io.github.jratatui.widgets.canvas.shapes.Circle;
-import io.github.jratatui.widgets.canvas.shapes.Points;
-import io.github.jratatui.widgets.canvas.shapes.Rectangle;
-import io.github.jratatui.widgets.paragraph.Paragraph;
+import ink.glimt.backend.jline.JLineBackend;
+import ink.glimt.layout.Constraint;
+import ink.glimt.layout.Layout;
+import ink.glimt.layout.Rect;
+import ink.glimt.style.Color;
+import ink.glimt.style.Style;
+import ink.glimt.terminal.Frame;
+import ink.glimt.terminal.Terminal;
+import ink.glimt.text.Line;
+import ink.glimt.text.Span;
+import ink.glimt.text.Text;
+import ink.glimt.widgets.block.Block;
+import ink.glimt.widgets.block.BorderType;
+import ink.glimt.widgets.block.Borders;
+import ink.glimt.widgets.block.Title;
+import ink.glimt.widgets.canvas.Canvas;
+import ink.glimt.widgets.canvas.Marker;
+import ink.glimt.widgets.canvas.shapes.Circle;
+import ink.glimt.widgets.canvas.shapes.Points;
+import ink.glimt.widgets.canvas.shapes.Rectangle;
+import ink.glimt.widgets.paragraph.Paragraph;
 import org.jline.terminal.Terminal.Signal;
 import org.jline.utils.NonBlockingReader;
 
@@ -154,7 +154,7 @@ public class CanvasDemo {
             .borderStyle(Style.EMPTY.fg(Color.CYAN))
             .title(Title.from(
                 Line.from(
-                    Span.raw(" JRatatui ").bold().cyan(),
+                    Span.raw(" Glimt ").bold().cyan(),
                     Span.raw("Canvas Demo ").yellow(),
                     Span.raw("[Marker: " + markers[currentMarker].name() + "]").dim()
                 )
@@ -260,8 +260,8 @@ public class CanvasDemo {
                 ctx.draw(new Circle(70, 30, 15, Color.BLUE));
 
                 // Lines
-                ctx.draw(new io.github.jratatui.widgets.canvas.shapes.Line(10, 60, 40, 90, Color.YELLOW));
-                ctx.draw(new io.github.jratatui.widgets.canvas.shapes.Line(40, 60, 10, 90, Color.YELLOW));
+                ctx.draw(new ink.glimt.widgets.canvas.shapes.Line(10, 60, 40, 90, Color.YELLOW));
+                ctx.draw(new ink.glimt.widgets.canvas.shapes.Line(40, 60, 10, 90, Color.YELLOW));
 
                 // Points
                 double[][] pointData = {
@@ -302,7 +302,7 @@ public class CanvasDemo {
                         case 2 -> Color.BLUE;
                         default -> Color.YELLOW;
                     };
-                    ctx.draw(new io.github.jratatui.widgets.canvas.shapes.Line(0, 0, x1, y1, color));
+                    ctx.draw(new ink.glimt.widgets.canvas.shapes.Line(0, 0, x1, y1, color));
                 }
 
                 // Draw center circle

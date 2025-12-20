@@ -1,0 +1,236 @@
+/*
+ * Copyright (c) 2025 Glimt Contributors
+ * SPDX-License-Identifier: MIT
+ */
+package ink.glimt.layout;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * A rectangular area defined by its position and size.
+ */
+public final class Rect {
+
+    public static final Rect ZERO = new Rect(0, 0, 0, 0);
+
+    private final int x;
+    private final int y;
+    private final int width;
+    private final int height;
+
+    public Rect(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public static Rect of(int width, int height) {
+        return new Rect(0, 0, width, height);
+    }
+
+    public static Rect of(Position position, Size size) {
+        return new Rect(position.x(), position.y(), size.width(), size.height());
+    }
+
+    public int x() {
+        return x;
+    }
+
+    public int y() {
+        return y;
+    }
+
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return height;
+    }
+
+    public int left() {
+        return x;
+    }
+
+    public int right() {
+        return x + width;
+    }
+
+    public int top() {
+        return y;
+    }
+
+    public int bottom() {
+        return y + height;
+    }
+
+    public int area() {
+        return width * height;
+    }
+
+    public boolean isEmpty() {
+        return width == 0 || height == 0;
+    }
+
+    public Position position() {
+        return new Position(x, y);
+    }
+
+    public Size size() {
+        return new Size(width, height);
+    }
+
+    public boolean contains(Position pos) {
+        return pos.x() >= x && pos.x() < right()
+            && pos.y() >= y && pos.y() < bottom();
+    }
+
+    public boolean contains(int px, int py) {
+        return px >= x && px < right() && py >= y && py < bottom();
+    }
+
+    /**
+     * Returns the inner area after applying the given margin.
+     */
+    public Rect inner(Margin margin) {
+        int newX = x + margin.left();
+        int newY = y + margin.top();
+        int newWidth = Math.max(0, width - margin.horizontalTotal());
+        int newHeight = Math.max(0, height - margin.verticalTotal());
+        return new Rect(newX, newY, newWidth, newHeight);
+    }
+
+    /**
+     * Returns the intersection of this rectangle with another.
+     */
+    public Rect intersection(Rect other) {
+        int x1 = Math.max(this.x, other.x);
+        int y1 = Math.max(this.y, other.y);
+        int x2 = Math.min(this.right(), other.right());
+        int y2 = Math.min(this.bottom(), other.bottom());
+
+        if (x1 >= x2 || y1 >= y2) {
+            return ZERO;
+        }
+        return new Rect(x1, y1, x2 - x1, y2 - y1);
+    }
+
+    /**
+     * Returns the union of this rectangle with another.
+     */
+    public Rect union(Rect other) {
+        if (this.isEmpty()) {
+            return other;
+        }
+        if (other.isEmpty()) {
+            return this;
+        }
+        int x1 = Math.min(this.x, other.x);
+        int y1 = Math.min(this.y, other.y);
+        int x2 = Math.max(this.right(), other.right());
+        int y2 = Math.max(this.bottom(), other.bottom());
+        return new Rect(x1, y1, x2 - x1, y2 - y1);
+    }
+
+    /**
+     * Returns a stream of all positions (cells) within this rectangle, row by row.
+     */
+    public Stream<Position> positions() {
+        return IntStream.range(y, bottom())
+            .boxed()
+            .flatMap(row -> IntStream.range(x, right())
+                .mapToObj(col -> new Position(col, row)));
+    }
+
+    /**
+     * Returns an iterator over rows in this rectangle.
+     */
+    public Iterable<Rect> rows() {
+        return () -> new Iterator<Rect>() {
+            private int currentY = y;
+
+            @Override
+            public boolean hasNext() {
+                return currentY < bottom();
+            }
+
+            @Override
+            public Rect next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                Rect row = new Rect(x, currentY, width, 1);
+                currentY++;
+                return row;
+            }
+        };
+    }
+
+    /**
+     * Returns an iterator over columns in this rectangle.
+     */
+    public Iterable<Rect> columns() {
+        return () -> new Iterator<Rect>() {
+            private int currentX = x;
+
+            @Override
+            public boolean hasNext() {
+                return currentX < right();
+            }
+
+            @Override
+            public Rect next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                Rect col = new Rect(currentX, y, 1, height);
+                currentX++;
+                return col;
+            }
+        };
+    }
+
+    /**
+     * Clamps another rectangle to fit within this one.
+     */
+    public Rect clamp(Rect inner) {
+        int clampedX = Math.max(x, Math.min(inner.x, right() - inner.width));
+        int clampedY = Math.max(y, Math.min(inner.y, bottom() - inner.height));
+        int clampedWidth = Math.min(inner.width, width);
+        int clampedHeight = Math.min(inner.height, height);
+        return new Rect(clampedX, clampedY, clampedWidth, clampedHeight);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Rect)) {
+            return false;
+        }
+        Rect rect = (Rect) o;
+        return x == rect.x
+            && y == rect.y
+            && width == rect.width
+            && height == rect.height;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Integer.hashCode(x);
+        result = 31 * result + Integer.hashCode(y);
+        result = 31 * result + Integer.hashCode(width);
+        result = 31 * result + Integer.hashCode(height);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Rect[x=%d, y=%d, width=%d, height=%d]", x, y, width, height);
+    }
+}
