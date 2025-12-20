@@ -55,17 +55,18 @@ public final class Sparkline implements Widget {
     /**
      * Symbol set for rendering bar heights.
      * <p>
-     * Contains Unicode block characters for different fill levels.
-     *
-     * @param empty symbol for zero/empty value
-     * @param oneEighth symbol for 1/8 fill
-     * @param oneQuarter symbol for 1/4 fill
-     * @param threeEighths symbol for 3/8 fill
-     * @param half symbol for 1/2 fill
-     * @param fiveEighths symbol for 5/8 fill
-     * @param threeQuarters symbol for 3/4 fill
-     * @param sevenEighths symbol for 7/8 fill
-     * @param full symbol for full fill
+     * Contains Unicode block characters for different fill levels:
+     * <ul>
+     *   <li><b>empty</b> - symbol for zero/empty value</li>
+     *   <li><b>oneEighth</b> - symbol for 1/8 fill</li>
+     *   <li><b>oneQuarter</b> - symbol for 1/4 fill</li>
+     *   <li><b>threeEighths</b> - symbol for 3/8 fill</li>
+     *   <li><b>half</b> - symbol for 1/2 fill</li>
+     *   <li><b>fiveEighths</b> - symbol for 5/8 fill</li>
+     *   <li><b>threeQuarters</b> - symbol for 3/4 fill</li>
+     *   <li><b>sevenEighths</b> - symbol for 7/8 fill</li>
+     *   <li><b>full</b> - symbol for full fill</li>
+     * </ul>
      */
     public static final class BarSet {
         private final String empty;

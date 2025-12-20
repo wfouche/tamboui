@@ -46,12 +46,13 @@ public final class Scrollbar implements StatefulWidget<ScrollbarState> {
     /**
      * Scrollbar symbol set for rendering.
      * <p>
-     * Contains characters used for track, thumb, and optional begin/end markers.
-     *
-     * @param track the character for the scrollbar track/background
-     * @param thumb the character for the thumb/position indicator
-     * @param begin the optional character for the start marker (can be null)
-     * @param end the optional character for the end marker (can be null)
+     * Contains characters used for track, thumb, and optional begin/end markers:
+     * <ul>
+     *   <li><b>track</b> - the character for the scrollbar track/background</li>
+     *   <li><b>thumb</b> - the character for the thumb/position indicator</li>
+     *   <li><b>begin</b> - the optional character for the start marker (can be null)</li>
+     *   <li><b>end</b> - the optional character for the end marker (can be null)</li>
+     * </ul>
      */
     public static final class SymbolSet {
         private final String track;
