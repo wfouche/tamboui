@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    if: ${{ secrets.CENTRAL_USERNAME != '' && secrets.CENTRAL_PASSWORD != '' }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
@@ -25,6 +24,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Execute Gradle build
+        if: env.CENTRAL_USERNAME
         run: ./gradlew closeAndReleaseSonatypeStagingRepository
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
