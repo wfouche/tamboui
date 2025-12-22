@@ -15,9 +15,19 @@ java {
     withJavadocJar()
 }
 
+
 tasks.withType<JavaCompile>().configureEach {
-    // remove warning about Java 8 support being deprecated
-    options.compilerArgs.add("-Xlint:-options")
+    options.encoding = "UTF-8"
+    options.compilerArgs.addAll(listOf(
+        "-Xlint:all",
+        "-Xlint:-serial",
+        "-Werror",
+        "-Xlint:-options"
+    ))
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 group = "dev.tamboui"
