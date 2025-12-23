@@ -28,17 +28,17 @@ final class CounterPanel extends PanelContent {
         var valueColor = counter > 0 ? Color.GREEN : (counter < 0 ? Color.RED : Color.WHITE);
         return column(
             row(text("Value: ").dim(), text(display).bold().fg(valueColor)),
-            text("[↑/k] Inc  [↓/j] Dec").dim()
+            text("[k] Inc  [j] Dec").dim()
         );
     }
 
     @Override
     EventResult handleKey(KeyEvent event) {
-        if (Keys.isUp(event) || Keys.isChar(event, 'k') || Keys.isChar(event, 'K')) {
+        if (Keys.isChar(event, 'k') || Keys.isChar(event, 'K')) {
             counter++;
             return EventResult.HANDLED;
         }
-        if (Keys.isDown(event) || Keys.isChar(event, 'j') || Keys.isChar(event, 'J')) {
+        if (Keys.isChar(event, 'j') || Keys.isChar(event, 'J')) {
             counter--;
             return EventResult.HANDLED;
         }

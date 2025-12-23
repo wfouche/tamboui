@@ -12,6 +12,7 @@ import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.tui.Keys;
+import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 
 import java.util.ArrayList;
@@ -89,6 +90,25 @@ final class FloatingPanelsArea implements Element {
         var result = fp.content.handleKey(event);
         if (result.isHandled()) {
             return result;
+        }
+
+        // Handle arrow keys to move the panel
+        int moveStep = event.hasShift() ? 5 : 1; // Shift+Arrow moves faster
+        if (event.code() == KeyCode.UP) {
+            fp.y = Math.max(0, fp.y - moveStep);
+            return EventResult.HANDLED;
+        }
+        if (event.code() == KeyCode.DOWN) {
+            fp.y += moveStep;
+            return EventResult.HANDLED;
+        }
+        if (event.code() == KeyCode.LEFT) {
+            fp.x = Math.max(0, fp.x - moveStep);
+            return EventResult.HANDLED;
+        }
+        if (event.code() == KeyCode.RIGHT) {
+            fp.x += moveStep;
+            return EventResult.HANDLED;
         }
 
         if (Keys.isChar(event, 'x') || Keys.isChar(event, 'X')) {
