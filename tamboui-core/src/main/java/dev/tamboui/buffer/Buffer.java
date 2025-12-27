@@ -302,4 +302,31 @@ public final class Buffer {
     private int index(int x, int y) {
         return (y - area.y()) * area.width() + (x - area.x());
     }
+ 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Buffer)) {
+            return false;
+        }
+        Buffer buffer = (Buffer) o;
+        if (!area.equals(buffer.area)) {
+            return false;
+        }
+        return Arrays.equals(content, buffer.content);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = area.hashCode();
+        result = 31 * result + Arrays.hashCode(content);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Buffer[area=%s, width=%d, height=%d]", area, width(), height());
+    }
 }

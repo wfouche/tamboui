@@ -31,6 +31,7 @@ It provides a comprehensive set of widgets and a layout system for building rich
 | `tamboui-tui` | High-level TUI framework with TuiRunner, event handling, and key helpers |
 | `tamboui-toolkit` | Fluent DSL for declarative UI construction with components and focus management |
 | `tamboui-picocli` | Optional PicoCLI integration for CLI argument parsing |
+| `tamboui-core-assertj` | AssertJ assertions for things like Buffer comparison |
 | `demos/*` | Demo applications showcasing widgets and features |
 
 ## Requirements
