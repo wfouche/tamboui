@@ -173,8 +173,8 @@ public final class Block implements Widget {
         if (mergeStrategy != MergeStrategy.REPLACE) {
             Cell existing = buffer.get(x, y);
             String existingSymbol = existing.symbol();
-            boolean existingIsText = !isBorderSymbol(existingSymbol);
-            boolean newIsBorder = isBorderSymbol(symbol);
+            boolean existingIsText = !MergeStrategy.isBorderSymbol(existingSymbol);
+            boolean newIsBorder = MergeStrategy.isBorderSymbol(symbol);
             
             // If existing cell is empty (space), just set the new cell
             if (" ".equals(existingSymbol)) {
@@ -278,10 +278,9 @@ public final class Block implements Widget {
                 // 3. NOT non-border text (like other titles) - should be preserved
                 
                 // Check if cell is empty (space) or contains a border character
-                // In Ratatui, Cell.symbol() returns " " if the symbol is None (empty cell)
-                // So we check for space character to identify empty cells
+                // Empty cells are a space character (" ") when queried:
                 boolean isEmpty = " ".equals(existingSymbol);
-                boolean isBorder = isBorderSymbol(existingSymbol);
+                boolean isBorder = MergeStrategy.isBorderSymbol(existingSymbol);
                 
                 // Only write to empty cells or cells with border characters
                 // This preserves existing title text from other blocks when they don't overlap
@@ -301,14 +300,6 @@ public final class Block implements Widget {
                 i += Character.charCount(codePoint);
             }
         }
-    }
-    
-    private boolean isBorderSymbol(String symbol) {
-        if (symbol == null || symbol.isEmpty()) {
-            return false;
-        }
-        int codePoint = symbol.codePointAt(0);
-        return codePoint >= 0x2500 && codePoint <= 0x257F;
     }
 
     public static final class Builder {
