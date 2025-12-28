@@ -59,6 +59,9 @@
     },
     "collapsed-borders-demo": {
       "script-ref": "demos/collapsed-borders-demo/src/main/java/dev/tamboui/demo/CollapsedBordersDemo.java"
+    },
+    "colors-rgb-demo": {
+      "script-ref": "demos/colors-rgb-demo/src/main/java/dev/tamboui/demo/ColorsRgbDemo.java"
     }
   }
 }
