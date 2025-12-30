@@ -164,6 +164,42 @@ class BlockTest {
     }
 
     @Test
+    @DisplayName("Block with QUADRANT_INSIDE border renders correctly")
+    void quadrantInsideBorder() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 7, 4));
+        Block.builder()
+            .borders(Borders.ALL)
+            .borderType(BorderType.QUADRANT_INSIDE)
+            .build()
+            .render(buffer.area(), buffer);
+        Buffer expected = Buffer.withLines(
+            "▗▄▄▄▄▄▖",
+            "▐     ▌",
+            "▐     ▌",
+            "▝▀▀▀▀▀▘"
+        );
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("Block with QUADRANT_OUTSIDE border renders correctly")
+    void quadrantOutsideBorder() {
+        Buffer buffer = Buffer.empty(new Rect(0, 0, 7, 4));
+        Block.builder()
+            .borders(Borders.ALL)
+            .borderType(BorderType.QUADRANT_OUTSIDE)
+            .build()
+            .render(buffer.area(), buffer);
+        Buffer expected = Buffer.withLines(
+            "▛▀▀▀▀▀▜",
+            "▌     ▐",
+            "▌     ▐",
+            "▙▄▄▄▄▄▟"
+        );
+        assertThat(buffer).isEqualTo(expected);
+    }
+
+    @Test
     @DisplayName("Title with merge strategy preserves existing titles")
     void titleWithMergeStrategyPreservesExisting() {
         Rect area = new Rect(0, 0, 20, 5);
@@ -571,7 +607,7 @@ class BlockTest {
         try {
             String expectedContent = loadResourceFile("dev/tamboui/widgets/block/" + resourceFile);
             Buffer expected = parseExpectedBufferFromContent(expectedContent);
-            
+
             // Compare the entire buffer directly, just like Ratatui does
             assertThat(buffer).isEqualTo(expected);
         } catch (IOException e) {
@@ -615,7 +651,7 @@ class BlockTest {
         // Normalize line endings (handle both \n and \r\n)
         content = content.replace("\r\n", "\n").replace("\r", "\n");
         String[] lines = content.split("\n");
-        
+
         if (lines.length == 0) {
             return Buffer.empty(new Rect(0, 0, 0, 0));
         }

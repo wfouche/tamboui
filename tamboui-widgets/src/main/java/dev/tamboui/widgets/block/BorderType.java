@@ -8,18 +8,19 @@ package dev.tamboui.widgets.block;
  * Type of border to draw.
  */
 public enum BorderType {
-    PLAIN(new BorderSet("─", "│", "┌", "┐", "└", "┘")),
-    ROUNDED(new BorderSet("─", "│", "╭", "╮", "╰", "╯")),
-    DOUBLE(new BorderSet("═", "║", "╔", "╗", "╚", "╝")),
-    THICK(new BorderSet("━", "┃", "┏", "┓", "┗", "┛")),
-    LIGHT_DOUBLE_DASHED(new BorderSet("╌", "╎", "┌", "┐", "└", "┘")),
-    HEAVY_DOUBLE_DASHED(new BorderSet("╍", "╏", "┏", "┓", "┗", "┛")),
-    LIGHT_TRIPLE_DASHED(new BorderSet("┄", "┆", "┌", "┐", "└", "┘")),
-    HEAVY_TRIPLE_DASHED(new BorderSet("┅", "┇", "┏", "┓", "┗", "┛")),
-    LIGHT_QUADRUPLE_DASHED(new BorderSet("┈", "┊", "┌", "┐", "└", "┘")),
-    HEAVY_QUADRUPLE_DASHED(new BorderSet("┉", "┋", "┏", "┓", "┗", "┛")),
-    QUADRANT_INSIDE(new BorderSet("▀", "▌", "▘", "▝", "▖", "▗")),
-    QUADRANT_OUTSIDE(new BorderSet("▄", "▐", "▛", "▜", "▙", "▟"));
+    PLAIN(new BorderSet("─", "─", "│", "│", "┌", "┐", "└", "┘")),
+    ROUNDED(new BorderSet("─", "─", "│", "│", "╭", "╮", "╰", "╯")),
+    DOUBLE(new BorderSet("═", "═", "║", "║", "╔", "╗", "╚", "╝")),
+    THICK(new BorderSet("━", "━", "┃", "┃", "┏", "┓", "┗", "┛")),
+    LIGHT_DOUBLE_DASHED(new BorderSet("╌", "╌", "╎", "╎", "┌", "┐", "└", "┘")),
+    HEAVY_DOUBLE_DASHED(new BorderSet("╍", "╍", "╏", "╏", "┏", "┓", "┗", "┛")),
+    LIGHT_TRIPLE_DASHED(new BorderSet("┄", "┄", "┆", "┆", "┌", "┐", "└", "┘")),
+    HEAVY_TRIPLE_DASHED(new BorderSet("┅", "┅", "┇", "┇", "┏", "┓", "┗", "┛")),
+    LIGHT_QUADRUPLE_DASHED(new BorderSet("┈", "┈", "┊", "┊", "┌", "┐", "└", "┘")),
+    HEAVY_QUADRUPLE_DASHED(new BorderSet("┉", "┉", "┋", "┋", "┏", "┓", "┗", "┛")),
+    QUADRANT_INSIDE(new BorderSet("▄", "▀", "▐",
+     "▌", "▗", "▖", "▝", "▘")),
+    QUADRANT_OUTSIDE(new BorderSet("▀", "▄", "▌", "▐", "▛", "▜", "▙", "▟"));
 
     private final BorderSet set;
 

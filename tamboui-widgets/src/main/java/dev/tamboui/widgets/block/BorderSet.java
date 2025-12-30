@@ -6,37 +6,56 @@ package dev.tamboui.widgets.block;
 
 /**
  * Characters used to draw a border.
+ * Supports asymmetric borders where top/bottom horizontal and left/right vertical
+ * characters can differ (e.g., for QUADRANT border types).
  */
 public final class BorderSet {
-    private final String horizontal;
-    private final String vertical;
+    private final String topHorizontal;
+    private final String bottomHorizontal;
+    private final String leftVertical;
+    private final String rightVertical;
     private final String topLeft;
     private final String topRight;
     private final String bottomLeft;
     private final String bottomRight;
 
+    /**
+     * Creates a border set with separate characters for each side.
+     */
     public BorderSet(
-        String horizontal,
-        String vertical,
+        String topHorizontal,
+        String bottomHorizontal,
+        String leftVertical,
+        String rightVertical,
         String topLeft,
         String topRight,
         String bottomLeft,
         String bottomRight
     ) {
-        this.horizontal = horizontal;
-        this.vertical = vertical;
+        this.topHorizontal = topHorizontal;
+        this.bottomHorizontal = bottomHorizontal;
+        this.leftVertical = leftVertical;
+        this.rightVertical = rightVertical;
         this.topLeft = topLeft;
         this.topRight = topRight;
         this.bottomLeft = bottomLeft;
         this.bottomRight = bottomRight;
     }
 
-    public String horizontal() {
-        return horizontal;
+    public String topHorizontal() {
+        return topHorizontal;
     }
 
-    public String vertical() {
-        return vertical;
+    public String bottomHorizontal() {
+        return bottomHorizontal;
+    }
+
+    public String leftVertical() {
+        return leftVertical;
+    }
+
+    public String rightVertical() {
+        return rightVertical;
     }
 
     public String topLeft() {
@@ -64,8 +83,10 @@ public final class BorderSet {
             return false;
         }
         BorderSet that = (BorderSet) o;
-        return horizontal.equals(that.horizontal)
-            && vertical.equals(that.vertical)
+        return topHorizontal.equals(that.topHorizontal)
+            && bottomHorizontal.equals(that.bottomHorizontal)
+            && leftVertical.equals(that.leftVertical)
+            && rightVertical.equals(that.rightVertical)
             && topLeft.equals(that.topLeft)
             && topRight.equals(that.topRight)
             && bottomLeft.equals(that.bottomLeft)
@@ -74,8 +95,10 @@ public final class BorderSet {
 
     @Override
     public int hashCode() {
-        int result = horizontal.hashCode();
-        result = 31 * result + vertical.hashCode();
+        int result = topHorizontal.hashCode();
+        result = 31 * result + bottomHorizontal.hashCode();
+        result = 31 * result + leftVertical.hashCode();
+        result = 31 * result + rightVertical.hashCode();
         result = 31 * result + topLeft.hashCode();
         result = 31 * result + topRight.hashCode();
         result = 31 * result + bottomLeft.hashCode();
@@ -86,7 +109,7 @@ public final class BorderSet {
     @Override
     public String toString() {
         return String.format(
-            "BorderSet[horizontal=%s, vertical=%s, topLeft=%s, topRight=%s, bottomLeft=%s, bottomRight=%s]",
-            horizontal, vertical, topLeft, topRight, bottomLeft, bottomRight);
+            "BorderSet[topHorizontal=%s, bottomHorizontal=%s, leftVertical=%s, rightVertical=%s, topLeft=%s, topRight=%s, bottomLeft=%s, bottomRight=%s]",
+            topHorizontal, bottomHorizontal, leftVertical, rightVertical, topLeft, topRight, bottomLeft, bottomRight);
     }
 }

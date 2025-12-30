@@ -124,28 +124,28 @@ public final class Block implements Widget {
         // Top border (skip corners if not REPLACE)
         if (borders.contains(Borders.TOP) && area.height() > 0) {
             for (int x = leftInset; x <= rightInset; x++) {
-                setBorderCell(buffer, x, area.top(), set.horizontal(), borderStyle);
+                setBorderCell(buffer, x, area.top(), set.topHorizontal(), borderStyle);
             }
         }
 
         // Bottom border (skip corners if not REPLACE)
         if (borders.contains(Borders.BOTTOM) && area.height() > 1) {
             for (int x = leftInset; x <= rightInset; x++) {
-                setBorderCell(buffer, x, area.bottom() - 1, set.horizontal(), borderStyle);
+                setBorderCell(buffer, x, area.bottom() - 1, set.bottomHorizontal(), borderStyle);
             }
         }
 
         // Left border (skip corners if not REPLACE)
         if (borders.contains(Borders.LEFT) && area.width() > 0) {
             for (int y = topInset; y <= bottomInset; y++) {
-                setBorderCell(buffer, area.left(), y, set.vertical(), borderStyle);
+                setBorderCell(buffer, area.left(), y, set.leftVertical(), borderStyle);
             }
         }
 
         // Right border (skip corners if not REPLACE)
         if (borders.contains(Borders.RIGHT) && area.width() > 1) {
             for (int y = topInset; y <= bottomInset; y++) {
-                setBorderCell(buffer, area.right() - 1, y, set.vertical(), borderStyle);
+                setBorderCell(buffer, area.right() - 1, y, set.rightVertical(), borderStyle);
             }
         }
 
