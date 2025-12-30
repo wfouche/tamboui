@@ -173,10 +173,10 @@ class BlockTest {
             .build()
             .render(buffer.area(), buffer);
         Buffer expected = Buffer.withLines(
-            "▖▄▄▄▄▄▗",
+            "▗▄▄▄▄▄▖",
             "▐     ▌",
             "▐     ▌",
-            "▘▀▀▀▀▀▝"
+            "▝▀▀▀▀▀▘"
         );
         assertThat(buffer).isEqualTo(expected);
     }

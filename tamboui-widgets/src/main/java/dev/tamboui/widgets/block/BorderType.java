@@ -18,7 +18,8 @@ public enum BorderType {
     HEAVY_TRIPLE_DASHED(new BorderSet("┅", "┅", "┇", "┇", "┏", "┓", "┗", "┛")),
     LIGHT_QUADRUPLE_DASHED(new BorderSet("┈", "┈", "┊", "┊", "┌", "┐", "└", "┘")),
     HEAVY_QUADRUPLE_DASHED(new BorderSet("┉", "┉", "┋", "┋", "┏", "┓", "┗", "┛")),
-    QUADRANT_INSIDE(new BorderSet("▄", "▀", "▐", "▌", "▖", "▗", "▘", "▝")),
+    QUADRANT_INSIDE(new BorderSet("▄", "▀", "▐",
+     "▌", "▗", "▖", "▝", "▘")),
     QUADRANT_OUTSIDE(new BorderSet("▀", "▄", "▌", "▐", "▛", "▜", "▙", "▟"));
 
     private final BorderSet set;
