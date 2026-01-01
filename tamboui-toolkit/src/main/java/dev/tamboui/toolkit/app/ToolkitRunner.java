@@ -5,8 +5,8 @@
 package dev.tamboui.toolkit.app;
 
 import dev.tamboui.toolkit.component.ComponentTree;
+import dev.tamboui.toolkit.element.DefaultRenderContext;
 import dev.tamboui.toolkit.element.Element;
-import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.toolkit.event.EventRouter;
 import dev.tamboui.toolkit.focus.FocusManager;
@@ -55,14 +55,14 @@ public final class ToolkitRunner implements AutoCloseable {
     private final FocusManager focusManager;
     private final ComponentTree componentTree;
     private final EventRouter eventRouter;
-    private final RenderContext renderContext;
+    private final DefaultRenderContext renderContext;
 
     private ToolkitRunner(TuiRunner tuiRunner) {
         this.tuiRunner = tuiRunner;
         this.focusManager = new FocusManager();
         this.componentTree = new ComponentTree();
         this.eventRouter = new EventRouter(focusManager);
-        this.renderContext = new RenderContext(focusManager, componentTree, eventRouter);
+        this.renderContext = new DefaultRenderContext(focusManager, componentTree, eventRouter);
     }
 
     /**
@@ -109,10 +109,10 @@ public final class ToolkitRunner implements AutoCloseable {
                 // Get the current element tree
                 Element root = elementSupplier.get();
 
-                // Render the element tree
-                // Elements register themselves during render if they have handlers
+                // Render the element tree and register root for events
                 if (root != null) {
                     root.render(frame, frame.area(), renderContext);
+                    renderContext.registerElement(root, frame.area());
                 }
             }
         );
