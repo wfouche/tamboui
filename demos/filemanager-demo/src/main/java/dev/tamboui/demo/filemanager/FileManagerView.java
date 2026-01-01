@@ -10,9 +10,9 @@ import dev.tamboui.style.Color;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.RenderContext;
+import dev.tamboui.toolkit.elements.DialogElement;
 import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.event.KeyEvent;
-import dev.tamboui.widgets.Clear;
 
 import static dev.tamboui.toolkit.Toolkit.*;
 
@@ -24,6 +24,7 @@ public class FileManagerView implements Element {
 
     private final FileManagerController manager;
     private final FileManagerKeyHandler keyHandler;
+    private DialogElement currentDialog;
 
     public FileManagerView(FileManagerController manager) {
         this.manager = manager;
@@ -44,6 +45,8 @@ public class FileManagerView implements Element {
         // Render dialog on top if present
         if (manager.hasDialog()) {
             renderDialog(frame, area, context);
+        } else {
+            currentDialog = null;
         }
     }
 
@@ -53,11 +56,13 @@ public class FileManagerView implements Element {
 
         // Handle input dialogs separately
         if (type == FileManagerController.DialogType.MKDIR_INPUT) {
-            renderInputDialog(frame, area, context, "New Directory", message);
+            currentDialog = createInputDialog("New Directory", message, manager::confirmMkdir);
+            currentDialog.render(frame, area, context);
             return;
         }
         if (type == FileManagerController.DialogType.GOTO_INPUT) {
-            renderInputDialog(frame, area, context, "Go To Directory", message);
+            currentDialog = createInputDialog("Go To Directory", message, manager::confirmGoto);
+            currentDialog.render(frame, area, context);
             return;
         }
 
@@ -75,50 +80,37 @@ public class FileManagerView implements Element {
             default -> "";
         };
 
-        var buttons = type == FileManagerController.DialogType.ERROR
-            ? "[Enter] OK"
-            : "[y] Yes  [n] No  [Esc] Cancel";
-
-        // Center the dialog
-        int dialogWidth = Math.max(40, message.length() + 4);
-        int dialogHeight = 5;
-        int x = (area.width() - dialogWidth) / 2;
-        int y = (area.height() - dialogHeight) / 2;
-        var dialogArea = new Rect(area.x() + x, area.y() + y, dialogWidth, dialogHeight);
-
-        // Clear the dialog area first
-        frame.renderWidget(Clear.INSTANCE, dialogArea);
-
-        var dialog = panel(title,
+        // Confirmation dialogs don't use Enter for confirm (they use y/n)
+        // so we just create a simple dialog without onConfirm
+        currentDialog = dialog(title,
             text(message),
             text(""),
-            text(buttons).dim()
-        ).rounded().borderColor(titleColor);
+            text(type == FileManagerController.DialogType.ERROR
+                ? "[Enter] OK"
+                : "[y] Yes  [n] No  [Esc] Cancel").dim()
+        ).rounded()
+         .borderColor(titleColor)
+         .width(Math.max(40, message.length() + 4))
+         .onCancel(manager::dismissDialog);
 
-        dialog.render(frame, dialogArea, context);
+        // For error dialogs, Enter also dismisses
+        if (type == FileManagerController.DialogType.ERROR) {
+            currentDialog.onConfirm(manager::dismissDialog);
+        }
+
+        currentDialog.render(frame, area, context);
     }
 
-    private void renderInputDialog(Frame frame, Rect area, RenderContext context, String title, String prompt) {
-        var input = manager.inputBuffer();
-        var inputDisplay = input + "_";  // Show cursor
-
-        int dialogWidth = Math.max(50, Math.max(prompt.length() + 4, inputDisplay.length() + 6));
-        int dialogHeight = 6;
-        int x = (area.width() - dialogWidth) / 2;
-        int y = (area.height() - dialogHeight) / 2;
-        var dialogArea = new Rect(area.x() + x, area.y() + y, dialogWidth, dialogHeight);
-
-        // Clear the dialog area first
-        frame.renderWidget(Clear.INSTANCE, dialogArea);
-
-        var dialog = panel(title,
+    private DialogElement createInputDialog(String title, String prompt, Runnable onConfirm) {
+        return dialog(title,
             text(prompt),
-            text(""),
-            text(inputDisplay).cyan(),
+            textInput(manager.inputState()).cursorStyle(dev.tamboui.style.Style.EMPTY.fg(Color.CYAN).reversed()),
             text("[Enter] Confirm  [Esc] Cancel").dim()
-        ).rounded().borderColor(Color.CYAN);
-
-        dialog.render(frame, dialogArea, context);
+        ).rounded()
+         .borderColor(Color.CYAN)
+         .width(Math.max(50, prompt.length() + 4))
+         .onConfirm(onConfirm)
+         .onCancel(manager::dismissDialog);
     }
 
     @Override
@@ -128,7 +120,11 @@ public class FileManagerView implements Element {
 
     @Override
     public EventResult handleKeyEvent(KeyEvent event, boolean focused) {
-        // Handle all keys globally since we're the root element
+        // Route to input dialog if one is present (modal behavior with text input)
+        if (currentDialog != null && manager.isInputDialog()) {
+            return currentDialog.handleKeyEvent(event, true);
+        }
+        // For confirmation dialogs and browser, use the key handler
         return keyHandler.handle(event);
     }
 

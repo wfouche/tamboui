@@ -4,6 +4,8 @@
  */
 package dev.tamboui.demo.filemanager;
 
+import dev.tamboui.widgets.input.TextInputState;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -29,8 +31,7 @@ public class FileManagerController {
 
     private DialogType currentDialog = DialogType.NONE;
     private String dialogMessage = "";
-    private String lastError = "";
-    private String inputBuffer = "";
+    private final TextInputState inputState = new TextInputState();
 
     public FileManagerController(Path leftStart, Path rightStart) {
         this.leftBrowser = new DirectoryBrowserController(leftStart);
@@ -69,8 +70,8 @@ public class FileManagerController {
         return dialogMessage;
     }
 
-    public String inputBuffer() {
-        return inputBuffer;
+    public TextInputState inputState() {
+        return inputState;
     }
 
     public boolean hasDialog() {
@@ -160,28 +161,18 @@ public class FileManagerController {
     public void dismissDialog() {
         currentDialog = DialogType.NONE;
         dialogMessage = "";
-        inputBuffer = "";
+        inputState.clear();
     }
 
     public void promptMkdir() {
-        inputBuffer = "";
+        inputState.clear();
         dialogMessage = "Create in: " + activeBrowser().currentDirectory();
         currentDialog = DialogType.MKDIR_INPUT;
     }
 
-    public void appendToInput(char c) {
-        inputBuffer += c;
-    }
-
-    public void backspaceInput() {
-        if (!inputBuffer.isEmpty()) {
-            inputBuffer = inputBuffer.substring(0, inputBuffer.length() - 1);
-        }
-    }
-
     public void confirmMkdir() {
-        if (!inputBuffer.isEmpty()) {
-            var targetDir = activeBrowser().currentDirectory().resolve(inputBuffer);
+        if (inputState.length() > 0) {
+            var targetDir = activeBrowser().currentDirectory().resolve(inputState.text());
             try {
                 Files.createDirectory(targetDir);
                 activeBrowser().refresh();
@@ -194,18 +185,18 @@ public class FileManagerController {
     }
 
     public void promptGoto() {
-        inputBuffer = activeBrowser().currentDirectory().toString();
+        inputState.setText(activeBrowser().currentDirectory().toString());
         dialogMessage = "Go to directory:";
         currentDialog = DialogType.GOTO_INPUT;
     }
 
     public void confirmGoto() {
-        if (!inputBuffer.isEmpty()) {
-            var targetDir = Path.of(inputBuffer);
+        if (inputState.length() > 0) {
+            var targetDir = Path.of(inputState.text());
             if (Files.isDirectory(targetDir)) {
                 activeBrowser().navigateTo(targetDir);
             } else {
-                showError("Not a directory: " + inputBuffer);
+                showError("Not a directory: " + inputState.text());
                 return;
             }
         }
@@ -213,7 +204,6 @@ public class FileManagerController {
     }
 
     public void showError(String message) {
-        lastError = message;
         dialogMessage = message;
         currentDialog = DialogType.ERROR;
     }

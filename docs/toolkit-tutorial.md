@@ -68,9 +68,11 @@ The recommended architecture separates concerns into three layers:
 The controller is a plain Java class that encapsulates your application state:
 
 ```java
+import dev.tamboui.widgets.input.TextInputState;
+
 public class TodoController {
     private final List<TodoItem> items = new ArrayList<>();
-    private final StringBuilder inputBuffer = new StringBuilder();
+    private final TextInputState inputState = new TextInputState();
     private int selectedIndex = 0;
     private boolean inputMode = false;
 
@@ -79,7 +81,7 @@ public class TodoController {
     // Queries (read state)
     public List<TodoItem> items() { return List.copyOf(items); }
     public int selectedIndex() { return selectedIndex; }
-    public String inputBuffer() { return inputBuffer.toString(); }
+    public TextInputState inputState() { return inputState; }
     public boolean isInputMode() { return inputMode; }
 
     // Commands (modify state)
@@ -108,22 +110,15 @@ public class TodoController {
     }
 
     public void startInput() { inputMode = true; }
-    public void cancelInput() { inputMode = false; inputBuffer.setLength(0); }
-
-    public void appendChar(char c) { inputBuffer.append(c); }
-    public void deleteChar() {
-        if (inputBuffer.length() > 0) {
-            inputBuffer.setLength(inputBuffer.length() - 1);
-        }
-    }
+    public void cancelInput() { inputMode = false; inputState.clear(); }
 
     public void submitInput() {
-        if (inputBuffer.length() > 0) {
-            items.add(new TodoItem(inputBuffer.toString(), false));
+        if (inputState.length() > 0) {
+            items.add(new TodoItem(inputState.text(), false));
             selectedIndex = items.size() - 1;
         }
         inputMode = false;
-        inputBuffer.setLength(0);
+        inputState.clear();
     }
 }
 ```
@@ -181,7 +176,7 @@ public class TodoView {
         }
         return row(
             text("New: ").cyan(),
-            text(controller.inputBuffer() + "_").bold()
+            textInput(controller.inputState()).fill()
         );
     }
 
@@ -199,7 +194,7 @@ public class TodoView {
 The application wires controller, view, and events:
 
 ```java
-import dev.tamboui.tui.event.KeyCode;
+import static dev.tamboui.toolkit.Toolkit.handleTextInputKey;
 
 public class TodoApp {
     public static void main(String[] args) throws Exception {
@@ -230,12 +225,8 @@ public class TodoApp {
             ctrl.submitInput();
             return EventResult.HANDLED;
         }
-        if (event.code() == KeyCode.CHAR && event.character() >= 32 && event.character() < 127) {
-            ctrl.appendChar(event.character());
-            return EventResult.HANDLED;
-        }
-        if (event.code() == KeyCode.BACKSPACE) {
-            ctrl.deleteChar();
+        // Delegate text editing to the utility (handles chars, backspace, delete, arrows, home/end)
+        if (handleTextInputKey(ctrl.inputState(), event)) {
             return EventResult.HANDLED;
         }
         return EventResult.UNHANDLED;
@@ -525,6 +516,124 @@ The `Toolkit` class provides these static factory methods (use `import static de
 | `table()`            | Data table            |
 | `tabs(titles...)`    | Tab bar               |
 | `textInput(state)`   | Text input field      |
+
+### List with Data and Item Renderer
+
+For lists backed by domain objects, use `data()` with an item renderer:
+
+```java
+// File list with custom rendering
+list()
+    .data(files, file -> ListItem.from(
+        file.isDirectory() ? file.name() + "/" : file.name()
+    ))
+    .state(listState)
+    .autoScroll()
+    .highlightColor(Color.CYAN)
+```
+
+**Key methods:**
+
+| Method                         | Description                              |
+|--------------------------------|------------------------------------------|
+| `data(list, renderer)`         | Set data and conversion function         |
+| `itemRenderer(fn)`             | Set item renderer separately             |
+| `state(listState)`             | Bind ListState for selection tracking    |
+| `autoScroll()`                 | Auto-scroll to keep selection visible    |
+| `highlightStyle(style)`        | Style for selected item                  |
+| `highlightSymbol(s)`           | Prefix for selected item (default: ">> ")|
+
+**ListState** tracks selection and scroll position:
+```java
+var listState = new ListState();
+listState.selectFirst();
+listState.selectNext(items.size());
+listState.selectPrevious();
+listState.select(index);
+```
+
+When `autoScroll()` is enabled, the list automatically calls `listState.scrollToSelected()` before rendering to keep the selected item visible.
+
+### Text Input Handling
+
+The toolkit provides utilities for building text input features:
+
+**TextInputState** - Manages text and cursor position:
+```java
+var inputState = new TextInputState();          // Empty
+var inputState = new TextInputState("initial"); // With initial text
+
+inputState.text();           // Get current text
+inputState.cursorPosition(); // Get cursor position
+inputState.length();         // Get text length
+inputState.clear();          // Clear text and reset cursor
+inputState.setText("new");   // Set text (cursor stays in bounds)
+```
+
+**TextInputElement** - Renders the input with cursor and handles key events automatically:
+```java
+textInput(inputState)
+    .placeholder("Enter name...")
+    .title("Name")
+    .rounded()
+    .borderColor(Color.CYAN)
+```
+
+`TextInputElement` implements `handleKeyEvent()`, so when the element is focused, it automatically handles arrow keys, home/end, backspace, delete, and character input. This is the recommended approach when using the toolkit's focus system.
+
+**handleTextInputKey utility** - For edge cases without element-based routing:
+```java
+import static dev.tamboui.toolkit.Toolkit.handleTextInputKey;
+
+// In a custom key handler (rarely needed)
+if (handleTextInputKey(inputState, event)) {
+    return EventResult.HANDLED;
+}
+```
+
+This utility is rarely needed since `TextInputElement` handles events automatically, and `DialogElement` routes events to its children. Use it only for edge cases where you can't use element-based event routing.
+
+### Dialogs
+
+The `dialog()` element simplifies creating modal dialogs by automatically centering, clearing the background, and handling key events:
+
+```java
+// Modal input dialog with callbacks
+var inputDialog = dialog("New Directory",
+    text("Enter name:"),
+    textInput(inputState),
+    text("[Enter] Confirm  [Esc] Cancel").dim()
+).rounded()
+ .borderColor(Color.CYAN)
+ .width(50)
+ .onConfirm(() -> createDirectory(inputState.text()))
+ .onCancel(() -> dismissDialog());
+
+// Render the dialog
+inputDialog.render(frame, area, context);
+
+// Route key events to the dialog (in handleKeyEvent)
+if (inputDialog != null) {
+    return inputDialog.handleKeyEvent(event, true);
+}
+```
+
+The dialog handles Enter for confirm, Escape for cancel, and routes other events to its children (e.g., `TextInputElement` handles text input automatically).
+
+**DialogElement methods:**
+
+| Method             | Description                           |
+|--------------------|---------------------------------------|
+| `title(s)`         | Set dialog title                      |
+| `rounded()`        | Use rounded border                    |
+| `doubleBorder()`   | Use double-line border                |
+| `borderColor(c)`   | Set border color                      |
+| `width(n)`         | Set fixed width                       |
+| `height(n)`        | Set fixed height                      |
+| `minWidth(n)`      | Set minimum width (default: 20)       |
+| `onConfirm(fn)`    | Callback for Enter key                |
+| `onCancel(fn)`     | Callback for Escape key               |
+| `add(element...)`  | Add child elements                    |
 
 **Other:**
 

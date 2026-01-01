@@ -12,6 +12,9 @@ import dev.tamboui.tui.event.KeyEvent;
 /**
  * Handles keyboard events and dispatches to the FileManager.
  * Translates key presses into controller commands.
+ * <p>
+ * Note: Input dialogs (mkdir, goto) are handled by DialogElement's modal behavior.
+ * This handler only deals with confirmation dialogs and browser navigation.
  */
 public class FileManagerKeyHandler {
 
@@ -22,50 +25,12 @@ public class FileManagerKeyHandler {
     }
 
     public EventResult handle(KeyEvent event) {
-        // ESC dismisses any dialog - check this FIRST
-        boolean isEsc = event.code() == KeyCode.ESCAPE;
-        if (isEsc && manager.hasDialog()) {
-            manager.dismissDialog();
-            return EventResult.HANDLED;
-        }
-
-        // Input dialog mode
-        if (manager.isInputDialog()) {
-            return handleInputDialogKey(event);
-        }
-
-        // Confirmation dialog mode
-        if (manager.hasDialog()) {
+        // Confirmation dialog mode (y/n dialogs)
+        if (manager.hasDialog() && !manager.isInputDialog()) {
             return handleDialogKey(event);
         }
 
         return handleBrowserKey(event);
-    }
-
-    private EventResult handleInputDialogKey(KeyEvent event) {
-        // Check ESC by key code directly
-        if (event.code() == KeyCode.ESCAPE) {
-            manager.dismissDialog();
-            return EventResult.HANDLED;
-        }
-        if (Keys.isEnter(event)) {
-            if (manager.currentDialog() == FileManagerController.DialogType.GOTO_INPUT) {
-                manager.confirmGoto();
-            } else {
-                manager.confirmMkdir();
-            }
-            return EventResult.HANDLED;
-        }
-        if (event.code() == KeyCode.BACKSPACE) {
-            manager.backspaceInput();
-            return EventResult.HANDLED;
-        }
-        // Accept printable characters
-        if (event.code() == KeyCode.CHAR && event.character() >= 32 && event.character() < 127) {
-            manager.appendToInput(event.character());
-            return EventResult.HANDLED;
-        }
-        return EventResult.HANDLED;
     }
 
     private EventResult handleDialogKey(KeyEvent event) {
