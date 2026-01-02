@@ -17,8 +17,7 @@ import java.time.Duration;
  * <ul>
  *   <li>{@link FileManagerController} - Application state and file operations</li>
  *   <li>{@link DirectoryBrowserController} - Single directory browsing state</li>
- *   <li>{@link FileManagerView} - Main UI composition</li>
- *   <li>{@link DirectoryBrowserView} - Single browser panel rendering</li>
+ *   <li>{@link FileManagerView} - Main UI composition and browser panel rendering</li>
  *   <li>{@link FileManagerKeyHandler} - Event routing to controllers</li>
  * </ul>
  *
