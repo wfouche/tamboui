@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.widgets.util;
+package dev.tamboui.widgets.text;
 
 /**
  * Text overflow handling mode for paragraphs.

@@ -11,7 +11,7 @@ import dev.tamboui.terminal.Frame;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 import dev.tamboui.text.Text;
-import dev.tamboui.widgets.util.Overflow;
+import dev.tamboui.widgets.text.Overflow;
 import dev.tamboui.widgets.paragraph.Paragraph;
 
 /**

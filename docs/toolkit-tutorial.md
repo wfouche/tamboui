@@ -37,7 +37,7 @@ import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.Keys;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
-import dev.tamboui.widgets.util.Overflow;
+import dev.tamboui.widgets.text.Overflow;
 
 import static dev.tamboui.toolkit.Toolkit.*;  // Factory methods
 ```

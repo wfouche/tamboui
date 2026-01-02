@@ -12,7 +12,7 @@ import dev.tamboui.symbols.merge.MergeStrategy;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 import dev.tamboui.widgets.Widget;
-import dev.tamboui.widgets.util.Overflow;
+import dev.tamboui.widgets.text.Overflow;
 
 import java.util.EnumSet;
 import java.util.List;

@@ -29,7 +29,7 @@ import dev.tamboui.widgets.list.ListItem;
 import dev.tamboui.widgets.list.ListState;
 import dev.tamboui.widgets.list.ListWidget;
 import dev.tamboui.widgets.paragraph.Paragraph;
-import dev.tamboui.widgets.util.Overflow;
+import dev.tamboui.widgets.text.Overflow;
 
 import java.io.IOException;
 import java.util.ArrayList;

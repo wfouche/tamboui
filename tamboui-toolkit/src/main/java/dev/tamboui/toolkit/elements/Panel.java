@@ -20,7 +20,7 @@ import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.block.BorderType;
 import dev.tamboui.widgets.block.Borders;
 import dev.tamboui.widgets.block.Title;
-import dev.tamboui.widgets.util.Overflow;
+import dev.tamboui.widgets.text.Overflow;
 
 import java.util.ArrayList;
 import java.util.Arrays;
