@@ -87,6 +87,93 @@ public interface RenderContext {
     }
 
     /**
+     * Resolves CSS style for a child element.
+     * <p>
+     * The child type is derived from the current element's type plus the child name
+     * (e.g., for a ListContainer rendering, "item" becomes "ListContainer-item").
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * Style itemStyle = context.childStyle("item");
+     * Style selectedStyle = context.childStyle("item", PseudoClassState.ofSelected());
+     * }</pre>
+     * <p>
+     * This enables CSS selectors like:
+     * <pre>{@code
+     * ListContainer-item { color: white; }
+     * ListContainer-item:selected { color: cyan; text-style: bold; }
+     * #nav ListContainer ListContainer-item:selected { color: green; }
+     * }</pre>
+     *
+     * @param childName the child name (e.g., "item", "header", "tab")
+     * @return the resolved style, merged with the current context style
+     */
+    default Style childStyle(String childName) {
+        return childStyle(childName, dev.tamboui.css.cascade.PseudoClassState.NONE);
+    }
+
+    /**
+     * Resolves CSS style for a child element with a pseudo-class state.
+     * <p>
+     * Use this for stateful children like selected items or focused tabs.
+     *
+     * @param childName the child name (e.g., "item", "row", "tab")
+     * @param state the pseudo-class state (e.g., selected, hover, disabled)
+     * @return the resolved style, merged with the current context style
+     */
+    default Style childStyle(String childName, dev.tamboui.css.cascade.PseudoClassState state) {
+        return currentStyle();  // fallback when no CSS engine
+    }
+
+    /**
+     * Resolves CSS style for a child element at a specific position.
+     * <p>
+     * The position enables CSS pseudo-class matching for {@code :first-child},
+     * {@code :last-child}, and {@code :nth-child(even/odd)}.
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * for (int i = 0; i < rows.size(); i++) {
+     *     ChildPosition pos = ChildPosition.of(i, rows.size());
+     *     Style rowStyle = context.childStyle("row", pos);
+     *     // CSS can now match :first-child, :last-child, :nth-child(even), etc.
+     * }
+     * }</pre>
+     *
+     * @param childName the child name (e.g., "row", "cell")
+     * @param position the position of the child within its siblings
+     * @return the resolved style, merged with the current context style
+     */
+    default Style childStyle(String childName, ChildPosition position) {
+        return childStyle(childName, position, dev.tamboui.css.cascade.PseudoClassState.NONE);
+    }
+
+    /**
+     * Resolves CSS style for a child element at a specific position with additional state.
+     * <p>
+     * Combines positional pseudo-classes ({@code :first-child}, {@code :last-child},
+     * {@code :nth-child}) with state pseudo-classes ({@code :selected}, {@code :hover}).
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * for (int i = 0; i < rows.size(); i++) {
+     *     ChildPosition pos = ChildPosition.of(i, rows.size());
+     *     boolean isSelected = (i == selectedIndex);
+     *     PseudoClassState state = isSelected ? PseudoClassState.ofSelected() : PseudoClassState.NONE;
+     *     Style rowStyle = context.childStyle("row", pos, state);
+     * }
+     * }</pre>
+     *
+     * @param childName the child name (e.g., "row", "cell")
+     * @param position the position of the child within its siblings
+     * @param state additional pseudo-class state (e.g., selected, hover)
+     * @return the resolved style, merged with the current context style
+     */
+    default Style childStyle(String childName, ChildPosition position, dev.tamboui.css.cascade.PseudoClassState state) {
+        return currentStyle();  // fallback when no CSS engine
+    }
+
+    /**
      * Creates an empty context for simple rendering without focus management.
      * Primarily useful for testing.
      */

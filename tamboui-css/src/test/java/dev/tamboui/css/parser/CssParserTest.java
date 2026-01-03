@@ -241,4 +241,52 @@ class CssParserTest {
         assertThat(stylesheet.rules().get(1).sourceOrder()).isEqualTo(1);
         assertThat(stylesheet.rules().get(2).sourceOrder()).isEqualTo(2);
     }
+
+    @Test
+    void parsesFunctionalPseudoClassNthChildEven() {
+        Stylesheet stylesheet = CssParser.parse("ListItem:nth-child(even) { background: gray; }");
+
+        assertThat(stylesheet.rules()).hasSize(1);
+        Rule rule = stylesheet.rules().get(0);
+        assertThat(rule.selector()).isInstanceOf(CompoundSelector.class);
+        CompoundSelector compound = (CompoundSelector) rule.selector();
+        assertThat(compound.parts()).hasSize(2);
+        assertThat(compound.parts().get(0)).isInstanceOf(TypeSelector.class);
+        assertThat(compound.parts().get(1)).isInstanceOf(PseudoClassSelector.class);
+        PseudoClassSelector pseudo = (PseudoClassSelector) compound.parts().get(1);
+        assertThat(pseudo.pseudoClass()).isEqualTo("nth-child(even)");
+    }
+
+    @Test
+    void parsesFunctionalPseudoClassNthChildOdd() {
+        Stylesheet stylesheet = CssParser.parse("ListItem:nth-child(odd) { background: white; }");
+
+        assertThat(stylesheet.rules()).hasSize(1);
+        Rule rule = stylesheet.rules().get(0);
+        CompoundSelector compound = (CompoundSelector) rule.selector();
+        PseudoClassSelector pseudo = (PseudoClassSelector) compound.parts().get(1);
+        assertThat(pseudo.pseudoClass()).isEqualTo("nth-child(odd)");
+    }
+
+    @Test
+    void parsesFunctionalPseudoClassStandalone() {
+        Stylesheet stylesheet = CssParser.parse(":nth-child(even) { color: red; }");
+
+        assertThat(stylesheet.rules()).hasSize(1);
+        Rule rule = stylesheet.rules().get(0);
+        assertThat(rule.selector()).isInstanceOf(PseudoClassSelector.class);
+        PseudoClassSelector pseudo = (PseudoClassSelector) rule.selector();
+        assertThat(pseudo.pseudoClass()).isEqualTo("nth-child(even)");
+    }
+
+    @Test
+    void parsesFunctionalPseudoClassWithNumericArgument() {
+        Stylesheet stylesheet = CssParser.parse("ListItem:nth-child(3) { color: blue; }");
+
+        assertThat(stylesheet.rules()).hasSize(1);
+        Rule rule = stylesheet.rules().get(0);
+        CompoundSelector compound = (CompoundSelector) rule.selector();
+        PseudoClassSelector pseudo = (PseudoClassSelector) compound.parts().get(1);
+        assertThat(pseudo.pseudoClass()).isEqualTo("nth-child(3)");
+    }
 }

@@ -4,6 +4,7 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import dev.tamboui.css.cascade.PseudoClassState;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.layout.Constraint;
@@ -40,13 +41,17 @@ import java.util.List;
  */
 public final class TableElement extends StyledElement<TableElement> {
 
+    private static final Style DEFAULT_HIGHLIGHT_STYLE = Style.EMPTY.reversed();
+    private static final Style DEFAULT_HEADER_STYLE = Style.EMPTY.bold();
+    private static final String DEFAULT_HIGHLIGHT_SYMBOL = "> ";
+
     private final List<Row> rows = new ArrayList<>();
     private final List<Constraint> widths = new ArrayList<>();
     private Row header;
     private Row footer;
     private TableState state;
-    private Style highlightStyle = Style.EMPTY.reversed();
-    private String highlightSymbol = ">> ";
+    private Style highlightStyle;  // null means "use CSS or default"
+    private String highlightSymbol;  // null means "use CSS or default"
     private int columnSpacing = 1;
     private String title;
     private BorderType borderType;
@@ -57,9 +62,10 @@ public final class TableElement extends StyledElement<TableElement> {
 
     /**
      * Sets the header row from strings.
+     * The header style will be resolved from CSS (TableElement-header) or use default bold.
      */
     public TableElement header(String... cells) {
-        this.header = Row.from(cells).style(Style.EMPTY.bold());
+        this.header = Row.from(cells);  // Style applied in renderContent from CSS
         return this;
     }
 
@@ -209,16 +215,39 @@ public final class TableElement extends StyledElement<TableElement> {
             return;
         }
 
+        // Resolve highlight style: explicit > CSS > default
+        Style effectiveHighlightStyle = highlightStyle;
+        if (effectiveHighlightStyle == null) {
+            Style cssStyle = context.childStyle("row", PseudoClassState.ofSelected());
+            effectiveHighlightStyle = cssStyle.equals(context.currentStyle())
+                ? DEFAULT_HIGHLIGHT_STYLE
+                : cssStyle;
+        }
+
+        // Resolve highlight symbol: explicit > default
+        String effectiveHighlightSymbol = highlightSymbol != null ? highlightSymbol : DEFAULT_HIGHLIGHT_SYMBOL;
+
+        // Resolve header style from CSS
+        Row effectiveHeader = header;
+        if (effectiveHeader != null && effectiveHeader.style().equals(Style.EMPTY)) {
+            Style headerStyle = context.childStyle("header");
+            if (!headerStyle.equals(context.currentStyle())) {
+                effectiveHeader = effectiveHeader.style(headerStyle);
+            } else {
+                effectiveHeader = effectiveHeader.style(DEFAULT_HEADER_STYLE);
+            }
+        }
+
         Table.Builder builder = Table.builder()
             .rows(rows)
             .widths(widths)
             .style(context.currentStyle())
-            .highlightStyle(highlightStyle)
-            .highlightSymbol(highlightSymbol)
+            .highlightStyle(effectiveHighlightStyle)
+            .highlightSymbol(effectiveHighlightSymbol)
             .columnSpacing(columnSpacing);
 
-        if (header != null) {
-            builder.header(header);
+        if (effectiveHeader != null) {
+            builder.header(effectiveHeader);
         }
 
         if (footer != null) {

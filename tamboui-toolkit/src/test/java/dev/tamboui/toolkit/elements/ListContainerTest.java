@@ -19,15 +19,15 @@ import static dev.tamboui.toolkit.Toolkit.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Tests for ListElement.
+ * Tests for ListContainer.
  */
-class ListElementTest {
+class ListContainerTest {
 
     @Test
-    @DisplayName("ListElement fluent API chains correctly")
+    @DisplayName("ListContainer fluent API chains correctly")
     void fluentApiChaining() {
         ListState state = new ListState();
-        ListElement<?> element = list("Item 1", "Item 2", "Item 3")
+        ListContainer<?> element = list("Item 1", "Item 2", "Item 3")
             .state(state)
             .highlightSymbol("> ")
             .highlightColor(Color.YELLOW)
@@ -35,40 +35,40 @@ class ListElementTest {
             .rounded()
             .borderColor(Color.CYAN);
 
-        assertThat(element).isInstanceOf(ListElement.class);
+        assertThat(element).isInstanceOf(ListContainer.class);
     }
 
     @Test
     @DisplayName("list() creates empty element")
     void emptyList() {
-        ListElement<?> element = list();
+        ListContainer<?> element = list();
         assertThat(element).isNotNull();
     }
 
     @Test
     @DisplayName("list(String...) creates element with items")
     void listWithItems() {
-        ListElement<?> element = list("A", "B", "C");
+        ListContainer<?> element = list("A", "B", "C");
         assertThat(element).isNotNull();
     }
 
     @Test
     @DisplayName("list(List<String>) creates element with items")
     void listWithItemsList() {
-        ListElement<?> element = list(Arrays.asList("X", "Y", "Z"));
+        ListContainer<?> element = list(Arrays.asList("X", "Y", "Z"));
         assertThat(element).isNotNull();
     }
 
     @Test
     @DisplayName("items() method replaces items")
     void itemsMethod() {
-        ListElement<?> element = list()
+        ListContainer<?> element = list()
             .items("New 1", "New 2");
         assertThat(element).isNotNull();
     }
 
     @Test
-    @DisplayName("ListElement renders items to buffer")
+    @DisplayName("ListContainer renders items to buffer")
     void rendersToBuffer() {
         Rect area = new Rect(0, 0, 20, 5);
         Buffer buffer = Buffer.empty(area);
@@ -86,7 +86,7 @@ class ListElementTest {
     }
 
     @Test
-    @DisplayName("ListElement with selection highlights item")
+    @DisplayName("ListContainer with selection highlights item")
     void withSelection() {
         Rect area = new Rect(0, 0, 20, 5);
         Buffer buffer = Buffer.empty(area);
@@ -118,7 +118,7 @@ class ListElementTest {
     }
 
     @Test
-    @DisplayName("ListElement without explicit state creates internal state")
+    @DisplayName("ListContainer without explicit state creates internal state")
     void internalState() {
         Rect area = new Rect(0, 0, 20, 5);
         Buffer buffer = Buffer.empty(area);
@@ -132,7 +132,7 @@ class ListElementTest {
     @Test
     @DisplayName("highlightSymbol sets the indicator")
     void highlightSymbol() {
-        ListElement<?> element = list("A", "B")
+        ListContainer<?> element = list("A", "B")
             .highlightSymbol("→ ");
         assertThat(element).isNotNull();
     }
@@ -140,7 +140,7 @@ class ListElementTest {
     @Test
     @DisplayName("highlightStyle sets the style")
     void highlightStyle() {
-        ListElement<?> element = list("A", "B")
+        ListContainer<?> element = list("A", "B")
             .highlightColor(Color.GREEN);
         assertThat(element).isNotNull();
     }

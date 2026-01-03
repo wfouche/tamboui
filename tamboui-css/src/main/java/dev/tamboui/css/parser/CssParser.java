@@ -248,7 +248,21 @@ public final class CssParser {
         if (token instanceof Token.Colon) {
             advance();
             Token.Ident pseudoClass = consume(Token.Ident.class, "Expected pseudo-class name after ':'");
-            return new PseudoClassSelector(pseudoClass.value());
+            String name = pseudoClass.value();
+
+            // Handle functional pseudo-classes like :nth-child(even)
+            if (check(Token.OpenParen.class)) {
+                advance(); // consume '('
+                StringBuilder args = new StringBuilder();
+                while (!check(Token.CloseParen.class) && !isAtEnd()) {
+                    Token t = advance();
+                    args.append(tokenToString(t));
+                }
+                consume(Token.CloseParen.class, "Expected ')' after pseudo-class arguments");
+                name = name + "(" + args.toString() + ")";
+            }
+
+            return new PseudoClassSelector(name);
         }
 
         throw error("Expected selector");

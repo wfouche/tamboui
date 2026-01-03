@@ -27,24 +27,33 @@ Panel:focus {
 }
 
 /* List styling */
-ListElement {
+ListContainer {
     background: $bg-primary;
     border-color: $border-color;
 }
 
-ListElement:focus {
+ListContainer:focus {
     border-color: $focus-color;
 }
 
-/* List item styles */
-.list-item {
+/* List item styles - using type-based sub-component naming */
+ListContainer-item {
     color: $fg-primary;
 }
 
-.list-item-selected {
+ListContainer-item:selected {
     background: $highlight-bg;
     color: $accent;
     text-style: bold;
+}
+
+/* Zebra striping for list items */
+ListContainer-item:nth-child(even) {
+    background: #229922;
+}
+
+ListContainer-item:nth-child(odd) {
+    background: #992299;
 }
 
 /* Header styling */

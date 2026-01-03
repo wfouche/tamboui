@@ -132,6 +132,10 @@ public final class CascadeResolver {
                     propertyRegistry.convertBorderType(value, variables)
                             .ifPresent(builder::borderType);
                     break;
+                case "width":
+                    propertyRegistry.convertWidth(value, variables)
+                            .ifPresent(builder::width);
+                    break;
                 default:
                     // Store as additional property for later use
                     builder.property(prop, resolveVariables(value, variables));

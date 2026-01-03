@@ -4,6 +4,7 @@
  */
 package dev.tamboui.css.cascade;
 
+import dev.tamboui.style.Width;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Modifier;
@@ -26,6 +27,7 @@ public final class ResolvedStyle {
     private final Padding padding;
     private final Alignment alignment;
     private final BorderType borderType;
+    private final Width width;
     private final Map<String, String> additionalProperties;
 
     private ResolvedStyle(Color foreground,
@@ -34,6 +36,7 @@ public final class ResolvedStyle {
                           Padding padding,
                           Alignment alignment,
                           BorderType borderType,
+                          Width width,
                           Map<String, String> additionalProperties) {
         this.foreground = foreground;
         this.background = background;
@@ -43,6 +46,7 @@ public final class ResolvedStyle {
         this.padding = padding;
         this.alignment = alignment;
         this.borderType = borderType;
+        this.width = width;
         this.additionalProperties = Collections.unmodifiableMap(new HashMap<>(additionalProperties));
     }
 
@@ -50,7 +54,7 @@ public final class ResolvedStyle {
      * Creates an empty resolved style.
      */
     public static ResolvedStyle empty() {
-        return new ResolvedStyle(null, null, null, null, null, null, Collections.<String, String>emptyMap());
+        return new ResolvedStyle(null, null, null, null, null, null, null, Collections.<String, String>emptyMap());
     }
 
     /**
@@ -96,6 +100,14 @@ public final class ResolvedStyle {
     }
 
     /**
+     * Returns the width behavior.
+     * Defaults to {@link Width#FILL} if not explicitly set.
+     */
+    public Width width() {
+        return width != null ? width : Width.FILL;
+    }
+
+    /**
      * Returns additional properties not mapped to specific fields.
      */
     public Map<String, String> additionalProperties() {
@@ -111,6 +123,9 @@ public final class ResolvedStyle {
 
     /**
      * Converts this resolved style to a TamboUI Style object.
+     * <p>
+     * The {@link Width} property is stored as a Style extension and can be
+     * retrieved via {@code style.extension(Width.class, Width.FILL)}.
      *
      * @return the Style object
      */
@@ -126,6 +141,9 @@ public final class ResolvedStyle {
         for (Modifier modifier : modifiers) {
             style = style.addModifier(modifier);
         }
+        if (width != null) {
+            style = style.withExtension(Width.class, width);
+        }
 
         return style;
     }
@@ -136,7 +154,7 @@ public final class ResolvedStyle {
     public boolean hasProperties() {
         return foreground != null || background != null ||
                 !modifiers.isEmpty() || padding != null || alignment != null ||
-                borderType != null || !additionalProperties.isEmpty();
+                borderType != null || width != null || !additionalProperties.isEmpty();
     }
 
     /**
@@ -156,6 +174,7 @@ public final class ResolvedStyle {
         private Padding padding;
         private Alignment alignment;
         private BorderType borderType;
+        private Width width;
         private Map<String, String> additionalProperties = new HashMap<>();
 
         private Builder() {
@@ -196,13 +215,18 @@ public final class ResolvedStyle {
             return this;
         }
 
+        public Builder width(Width width) {
+            this.width = width;
+            return this;
+        }
+
         public Builder property(String name, String value) {
             this.additionalProperties.put(name, value);
             return this;
         }
 
         public ResolvedStyle build() {
-            return new ResolvedStyle(foreground, background, modifiers, padding, alignment, borderType, additionalProperties);
+            return new ResolvedStyle(foreground, background, modifiers, padding, alignment, borderType, width, additionalProperties);
         }
     }
 

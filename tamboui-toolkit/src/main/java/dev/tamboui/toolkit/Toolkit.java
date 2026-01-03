@@ -14,7 +14,7 @@ import dev.tamboui.toolkit.elements.DialogElement;
 import dev.tamboui.toolkit.elements.GaugeElement;
 import dev.tamboui.toolkit.elements.LazyElement;
 import dev.tamboui.toolkit.elements.LineGaugeElement;
-import dev.tamboui.toolkit.elements.ListElement;
+import dev.tamboui.toolkit.elements.ListContainer;
 import dev.tamboui.toolkit.elements.Panel;
 import dev.tamboui.toolkit.elements.Row;
 import dev.tamboui.toolkit.elements.ScrollbarElement;
@@ -466,27 +466,27 @@ public final class Toolkit {
      * @param items the list items
      * @return a new list element
      */
-    public static ListElement<?> list(String... items) {
-        return new ListElement<>(items);
+    public static ListContainer<?> list(String... items) {
+        return new ListContainer<>(items);
     }
 
     /**
      * Creates a list with the given items.
      *
      * @param items the list items
-     * @return a new list element
+     * @return a new list container
      */
-    public static ListElement<?> list(List<String> items) {
-        return new ListElement<>(items);
+    public static ListContainer<?> list(List<String> items) {
+        return new ListContainer<>(items);
     }
 
     /**
      * Creates an empty list.
      *
-     * @return a new empty list element
+     * @return a new empty list container
      */
-    public static ListElement<?> list() {
-        return new ListElement<>();
+    public static ListContainer<?> list() {
+        return new ListContainer<>();
     }
 
     // ==================== Table ====================

@@ -266,28 +266,34 @@ public class CssNoToolkitDemo {
         boolean isFocused = focusedPanel == 0;
 
         // Resolve styles
-        SimpleStyleable listStyleable = new SimpleStyleable("ListElement", "nav-list", Set.of());
+        SimpleStyleable listStyleable = new SimpleStyleable("ListContainer", "nav-list", Set.of());
         PseudoClassState state = isFocused ? PseudoClassState.ofFocused() : PseudoClassState.NONE;
         ResolvedStyle listStyle = styleEngine.resolve(listStyleable, state, Collections.emptyList());
 
-        // Get styles for list items - must include background from CSS
-        SimpleStyleable itemStyleable = new SimpleStyleable("ListItem", null, Set.of("list-item"));
-        SimpleStyleable selectedStyleable = new SimpleStyleable("ListItem", null, Set.of("list-item-selected"));
-        ResolvedStyle itemStyle = styleEngine.resolve(itemStyleable);
-        ResolvedStyle selectedStyle = styleEngine.resolve(selectedStyleable);
+        // Get styles for list items using type-based sub-component naming
+        SimpleStyleable itemStyleable = new SimpleStyleable("ListContainer-item", null, Set.of());
+        ResolvedStyle selectedStyle = styleEngine.resolve(itemStyleable, PseudoClassState.ofSelected(), Collections.emptyList());
 
-        // Create ListItems with the proper style (including background)
-        Style listItemBaseStyle = itemStyle.toStyle();
-        List<ListItem> items = listItems.stream()
-            .map(s -> ListItem.from(s).style(listItemBaseStyle))
-            .toList();
+        // Create ListItems with positional styles (odd/even)
+        List<ListItem> items = new ArrayList<>();
+        for (int i = 0; i < listItems.size(); i++) {
+            // Build pseudo-class state with nth-child position (1-based)
+            PseudoClassState itemState = PseudoClassState.NONE
+                .withFirstChild(i == 0)
+                .withLastChild(i == listItems.size() - 1)
+                .withNthChild(i + 1);  // CSS nth-child is 1-based
+            ResolvedStyle posStyle = styleEngine.resolve(itemStyleable, itemState, Collections.emptyList());
+            items.add(ListItem.from(listItems.get(i)).style(posStyle.toStyle()));
+        }
 
         Style listResolvedStyle = listStyle.toStyle();
+        // Get base item style for the highlight symbol
+        ResolvedStyle baseItemStyle = styleEngine.resolve(itemStyleable);
         ListWidget list = ListWidget.builder()
             .items(items)
-            .style(listItemBaseStyle)
+            .style(baseItemStyle.toStyle())
             .highlightStyle(selectedStyle.toStyle())
-            .highlightSymbol(Line.from(Span.styled("> ", listItemBaseStyle)))
+            .highlightSymbol(Line.from(Span.styled("> ", baseItemStyle.toStyle())))
             .block(Block.builder()
                 .borders(Borders.ALL)
                 .borderType(BorderType.ROUNDED)

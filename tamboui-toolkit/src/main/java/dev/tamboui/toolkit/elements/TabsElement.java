@@ -4,6 +4,7 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import dev.tamboui.css.cascade.PseudoClassState;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.layout.Rect;
@@ -34,9 +35,11 @@ import java.util.List;
  */
 public final class TabsElement extends StyledElement<TabsElement> {
 
+    private static final Style DEFAULT_HIGHLIGHT_STYLE = Style.EMPTY.reversed();
+
     private final List<String> titles = new ArrayList<>();
     private TabsState state;
-    private Style highlightStyle = Style.EMPTY.reversed();
+    private Style highlightStyle;  // null means "use CSS or default"
     private String divider = " | ";
     private String paddingLeft = "";
     private String paddingRight = "";
@@ -160,10 +163,19 @@ public final class TabsElement extends StyledElement<TabsElement> {
             return;
         }
 
+        // Resolve highlight style: explicit > CSS > default
+        Style effectiveHighlightStyle = highlightStyle;
+        if (effectiveHighlightStyle == null) {
+            Style cssStyle = context.childStyle("tab", PseudoClassState.ofSelected());
+            effectiveHighlightStyle = cssStyle.equals(context.currentStyle())
+                ? DEFAULT_HIGHLIGHT_STYLE
+                : cssStyle;
+        }
+
         Tabs.Builder builder = Tabs.builder()
             .titles(titles.toArray(new String[0]))
             .style(context.currentStyle())
-            .highlightStyle(highlightStyle)
+            .highlightStyle(effectiveHighlightStyle)
             .divider(divider)
             .padding(paddingLeft, paddingRight);
 

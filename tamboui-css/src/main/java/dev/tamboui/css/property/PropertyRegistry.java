@@ -7,6 +7,7 @@ package dev.tamboui.css.property;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Modifier;
+import dev.tamboui.style.Width;
 import dev.tamboui.widgets.block.BorderType;
 import dev.tamboui.widgets.block.Padding;
 
@@ -29,6 +30,7 @@ public final class PropertyRegistry {
     private final SpacingConverter spacingConverter;
     private final AlignmentConverter alignmentConverter;
     private final BorderTypeConverter borderTypeConverter;
+    private final WidthConverter widthConverter;
 
     private PropertyRegistry() {
         this.converters = new HashMap<>();
@@ -37,6 +39,7 @@ public final class PropertyRegistry {
         this.spacingConverter = new SpacingConverter();
         this.alignmentConverter = new AlignmentConverter();
         this.borderTypeConverter = new BorderTypeConverter();
+        this.widthConverter = new WidthConverter();
 
         // Register default converters
         converters.put("color", colorConverter);
@@ -47,6 +50,7 @@ public final class PropertyRegistry {
         converters.put("padding", spacingConverter);
         converters.put("text-align", alignmentConverter);
         converters.put("border-type", borderTypeConverter);
+        converters.put("width", widthConverter);
     }
 
     /**
@@ -111,6 +115,17 @@ public final class PropertyRegistry {
      */
     public Optional<BorderType> convertBorderType(String value, Map<String, String> variables) {
         return borderTypeConverter.convert(value, variables);
+    }
+
+    /**
+     * Converts CSS width value.
+     *
+     * @param value     the CSS value
+     * @param variables the CSS variables
+     * @return the converted width, or empty if conversion fails
+     */
+    public Optional<Width> convertWidth(String value, Map<String, String> variables) {
+        return widthConverter.convert(value, variables);
     }
 
     /**

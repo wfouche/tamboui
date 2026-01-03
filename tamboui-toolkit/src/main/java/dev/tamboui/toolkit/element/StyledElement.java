@@ -225,7 +225,7 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
 
         if (context instanceof DefaultRenderContext) {
             DefaultRenderContext ctx = (DefaultRenderContext) context;
-            ctx.withStyle(effectiveStyle, () -> renderContent(frame, area, context));
+            ctx.withElement(this, effectiveStyle, () -> renderContent(frame, area, context));
         } else {
             // Fallback for non-default contexts (e.g., testing)
             renderContent(frame, area, context);

@@ -4,7 +4,10 @@
  */
 package dev.tamboui.style;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -19,13 +22,15 @@ public final class Style {
     private final Color underlineColor;
     private final EnumSet<Modifier> addModifiers;
     private final EnumSet<Modifier> subModifiers;
+    private final Map<Class<?>, Object> extensions;
 
     public static final Style EMPTY = new Style(
         null,
         null,
         null,
         EnumSet.noneOf(Modifier.class),
-        EnumSet.noneOf(Modifier.class)
+        EnumSet.noneOf(Modifier.class),
+        Collections.emptyMap()
     );
 
     public Style(
@@ -35,12 +40,24 @@ public final class Style {
         EnumSet<Modifier> addModifiers,
         EnumSet<Modifier> subModifiers
     ) {
+        this(fg, bg, underlineColor, addModifiers, subModifiers, Collections.emptyMap());
+    }
+
+    public Style(
+        Color fg,
+        Color bg,
+        Color underlineColor,
+        EnumSet<Modifier> addModifiers,
+        EnumSet<Modifier> subModifiers,
+        Map<Class<?>, Object> extensions
+    ) {
         this.fg = fg;
         this.bg = bg;
         this.underlineColor = underlineColor;
         // Defensive copy of mutable EnumSets
         this.addModifiers = EnumSet.copyOf(addModifiers);
         this.subModifiers = EnumSet.copyOf(subModifiers);
+        this.extensions = extensions.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new HashMap<>(extensions));
     }
 
     /**
@@ -277,6 +294,49 @@ public final class Style {
         return removeModifier(Modifier.CROSSED_OUT);
     }
 
+    // Extension methods for storing additional properties
+
+    /**
+     * Returns a new style with the given extension property set.
+     * Extensions allow modules to attach additional data to styles without coupling.
+     *
+     * @param type the extension type (class)
+     * @param value the extension value
+     * @param <T> the type of the extension
+     * @return a new style with the extension set
+     */
+    public <T> Style withExtension(Class<T> type, T value) {
+        Map<Class<?>, Object> newExtensions = new HashMap<>(extensions);
+        newExtensions.put(type, value);
+        return new Style(fg, bg, underlineColor, addModifiers, subModifiers, newExtensions);
+    }
+
+    /**
+     * Returns the extension value for the given type, if present.
+     *
+     * @param type the extension type (class)
+     * @param <T> the type of the extension
+     * @return the extension value, or empty if not set
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> extension(Class<T> type) {
+        return Optional.ofNullable((T) extensions.get(type));
+    }
+
+    /**
+     * Returns the extension value for the given type, or a default value.
+     *
+     * @param type the extension type (class)
+     * @param defaultValue the default value if not set
+     * @param <T> the type of the extension
+     * @return the extension value, or the default
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T extension(Class<T> type, T defaultValue) {
+        Object value = extensions.get(type);
+        return value != null ? (T) value : defaultValue;
+    }
+
     /**
      * Combines this style with another. The other style's values override this style's
      * values where they are set; null values in {@code other} leave the current value unchanged.
@@ -297,7 +357,16 @@ public final class Style {
         newSubModifiers.removeAll(other.addModifiers);
         newSubModifiers.addAll(other.subModifiers);
 
-        return new Style(newFg, newBg, newUnderlineColor, newAddModifiers, newSubModifiers);
+        // Merge extensions: other's extensions override this's
+        Map<Class<?>, Object> newExtensions;
+        if (this.extensions.isEmpty() && other.extensions.isEmpty()) {
+            newExtensions = Collections.emptyMap();
+        } else {
+            newExtensions = new HashMap<>(this.extensions);
+            newExtensions.putAll(other.extensions);
+        }
+
+        return new Style(newFg, newBg, newUnderlineColor, newAddModifiers, newSubModifiers, newExtensions);
     }
 
     /**
@@ -357,18 +426,24 @@ public final class Style {
             && Objects.equals(bg, style.bg)
             && Objects.equals(underlineColor, style.underlineColor)
             && addModifiers.equals(style.addModifiers)
-            && subModifiers.equals(style.subModifiers);
+            && subModifiers.equals(style.subModifiers)
+            && extensions.equals(style.extensions);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fg, bg, underlineColor, addModifiers, subModifiers);
+        return Objects.hash(fg, bg, underlineColor, addModifiers, subModifiers, extensions);
     }
 
     @Override
     public String toString() {
+        if (extensions.isEmpty()) {
+            return String.format(
+                "Style[fg=%s, bg=%s, underlineColor=%s, addModifiers=%s, subModifiers=%s]",
+                fg, bg, underlineColor, addModifiers, subModifiers);
+        }
         return String.format(
-            "Style[fg=%s, bg=%s, underlineColor=%s, addModifiers=%s, subModifiers=%s]",
-            fg, bg, underlineColor, addModifiers, subModifiers);
+            "Style[fg=%s, bg=%s, underlineColor=%s, addModifiers=%s, subModifiers=%s, extensions=%s]",
+            fg, bg, underlineColor, addModifiers, subModifiers, extensions);
     }
 }

@@ -35,6 +35,7 @@ public final class DefaultRenderContext implements RenderContext {
     private final ComponentTree componentTree;
     private final EventRouter eventRouter;
     private final Deque<Style> styleStack = new ArrayDeque<>();
+    private final Deque<Styleable> elementStack = new ArrayDeque<>();
     private StyleEngine styleEngine;
 
     public DefaultRenderContext(FocusManager focusManager, ComponentTree componentTree, EventRouter eventRouter) {
@@ -161,6 +162,70 @@ public final class DefaultRenderContext implements RenderContext {
         return styleStack.isEmpty() ? Style.EMPTY : styleStack.peek();
     }
 
+    @Override
+    public Style childStyle(String childName, PseudoClassState state) {
+        if (styleEngine == null || elementStack.isEmpty()) {
+            return currentStyle();
+        }
+
+        Styleable parent = elementStack.peek();
+        String childType = parent.styleType() + "-" + childName;
+        Styleable virtual = new VirtualChild(childType, parent);
+
+        // Build ancestor chain: parent's ancestors + parent
+        List<Styleable> ancestors = buildAncestorChain(parent);
+        ancestors.add(parent);
+
+        ResolvedStyle resolved = styleEngine.resolve(virtual, state, ancestors);
+        return resolved.hasProperties()
+            ? currentStyle().patch(resolved.toStyle())
+            : currentStyle();
+    }
+
+    @Override
+    public Style childStyle(String childName, ChildPosition position, PseudoClassState state) {
+        // Merge position-derived pseudo-classes with the provided state
+        PseudoClassState mergedState = state
+            .withFirstChild(position.isFirst())
+            .withLastChild(position.isLast())
+            .withNthChild(position.nthChild());
+
+        return childStyle(childName, mergedState);
+    }
+
+    /**
+     * A virtual Styleable representing a child element.
+     */
+    private static final class VirtualChild implements Styleable {
+        private final String type;
+        private final Styleable parent;
+
+        VirtualChild(String type, Styleable parent) {
+            this.type = type;
+            this.parent = parent;
+        }
+
+        @Override
+        public String styleType() {
+            return type;
+        }
+
+        @Override
+        public Optional<String> cssId() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Set<String> cssClasses() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Optional<Styleable> cssParent() {
+            return Optional.of(parent);
+        }
+    }
+
     private List<Styleable> buildAncestorChain(Styleable element) {
         List<Styleable> ancestors = new ArrayList<>();
         Optional<Styleable> parent = element.cssParent();
@@ -228,7 +293,9 @@ public final class DefaultRenderContext implements RenderContext {
      *
      * @param style the style to push
      * @param action the action to execute
+     * @deprecated Use {@link #withElement(Styleable, Style, Runnable)} instead
      */
+    @Deprecated
     public void withStyle(Style style, Runnable action) {
         // Merge new style onto current style
         Style merged = currentStyle().patch(style);
@@ -238,5 +305,37 @@ public final class DefaultRenderContext implements RenderContext {
         } finally {
             styleStack.pop();
         }
+    }
+
+    /**
+     * Executes an action with an element and style pushed onto their stacks.
+     * <p>
+     * The style is merged with the current style. Both the element and merged style
+     * are available via {@link #currentElement()} and {@link #currentStyle()}.
+     * This enables {@link #childStyle(String)} to work without passing the parent.
+     * <p>
+     * Internal use only - called by StyledElement.render().
+     *
+     * @param element the element being rendered
+     * @param style the element's resolved style
+     * @param action the action to execute
+     */
+    public void withElement(Styleable element, Style style, Runnable action) {
+        Style merged = currentStyle().patch(style);
+        styleStack.push(merged);
+        elementStack.push(element);
+        try {
+            action.run();
+        } finally {
+            elementStack.pop();
+            styleStack.pop();
+        }
+    }
+
+    /**
+     * Returns the current element being rendered, if any.
+     */
+    public Optional<Styleable> currentElement() {
+        return elementStack.isEmpty() ? Optional.empty() : Optional.of(elementStack.peek());
     }
 }

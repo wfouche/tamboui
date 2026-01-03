@@ -4,6 +4,8 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import dev.tamboui.css.cascade.PseudoClassState;
+import dev.tamboui.toolkit.element.ChildPosition;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.layout.Rect;
@@ -24,9 +26,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * A DSL wrapper for the ListWidget.
+ * A container element that displays a selectable list of items.
  * <p>
- * Displays a selectable list of items.
+ * This is a DSL wrapper for the ListWidget.
  * <pre>{@code
  * list("Item 1", "Item 2", "Item 3")
  *     .state(listState)
@@ -34,8 +36,16 @@ import java.util.function.Function;
  *     .title("My List")
  *     .rounded()
  * }</pre>
+ * <p>
+ * CSS selectors:
+ * <ul>
+ *   <li>{@code ListContainer} - styles the container (border, background)</li>
+ *   <li>{@code ListContainer-item} - styles each list item</li>
+ *   <li>{@code ListContainer-item:selected} - styles the selected item</li>
+ *   <li>{@code ListContainer-item:nth-child(odd/even)} - zebra striping</li>
+ * </ul>
  */
-public final class ListElement<T> extends StyledElement<ListElement<T>> {
+public final class ListContainer<T> extends StyledElement<ListContainer<T>> {
 
     private static final Style DEFAULT_HIGHLIGHT_STYLE = Style.EMPTY.reversed();
     private static final String DEFAULT_HIGHLIGHT_SYMBOL = "> ";
@@ -51,16 +61,16 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     private Color borderColor;
     private boolean autoScroll;
 
-    public ListElement() {
+    public ListContainer() {
     }
 
-    public ListElement(String... items) {
+    public ListContainer(String... items) {
         for (String item : items) {
             this.items.add(ListItem.from(item));
         }
     }
 
-    public ListElement(List<String> items) {
+    public ListContainer(List<String> items) {
         for (String item : items) {
             this.items.add(ListItem.from(item));
         }
@@ -69,7 +79,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the list items from strings.
      */
-    public ListElement<T> items(String... items) {
+    public ListContainer<T> items(String... items) {
         this.items.clear();
         for (String item : items) {
             this.items.add(ListItem.from(item));
@@ -80,7 +90,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the list items from a collection.
      */
-    public ListElement<T> items(List<String> items) {
+    public ListContainer<T> items(List<String> items) {
         this.items.clear();
         for (String item : items) {
             this.items.add(ListItem.from(item));
@@ -91,7 +101,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the list items from ListItem objects.
      */
-    public ListElement<T> listItems(ListItem... items) {
+    public ListContainer<T> listItems(ListItem... items) {
         this.items.clear();
         this.items.addAll(Arrays.asList(items));
         return this;
@@ -100,7 +110,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Adds an item to the list.
      */
-    public ListElement<T> add(String item) {
+    public ListContainer<T> add(String item) {
         this.items.add(ListItem.from(item));
         return this;
     }
@@ -108,7 +118,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Adds an item to the list.
      */
-    public ListElement<T> add(ListItem item) {
+    public ListContainer<T> add(ListItem item) {
         this.items.add(item);
         return this;
     }
@@ -116,7 +126,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the list state for selection tracking.
      */
-    public ListElement<T> state(ListState state) {
+    public ListContainer<T> state(ListState state) {
         this.state = state;
         return this;
     }
@@ -124,7 +134,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the highlight style for selected items.
      */
-    public ListElement<T> highlightStyle(Style style) {
+    public ListContainer<T> highlightStyle(Style style) {
         this.highlightStyle = style;
         return this;
     }
@@ -132,7 +142,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the highlight color for selected items.
      */
-    public ListElement<T> highlightColor(Color color) {
+    public ListContainer<T> highlightColor(Color color) {
         this.highlightStyle = Style.EMPTY.fg(color).bold();
         return this;
     }
@@ -140,7 +150,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the symbol displayed before the selected item.
      */
-    public ListElement<T> highlightSymbol(String symbol) {
+    public ListContainer<T> highlightSymbol(String symbol) {
         this.highlightSymbol = symbol;
         return this;
     }
@@ -148,7 +158,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the title.
      */
-    public ListElement<T> title(String title) {
+    public ListContainer<T> title(String title) {
         this.title = title;
         return this;
     }
@@ -156,7 +166,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Uses rounded borders.
      */
-    public ListElement<T> rounded() {
+    public ListContainer<T> rounded() {
         this.borderType = BorderType.ROUNDED;
         return this;
     }
@@ -164,7 +174,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
     /**
      * Sets the border color.
      */
-    public ListElement<T> borderColor(Color color) {
+    public ListContainer<T> borderColor(Color color) {
         this.borderColor = color;
         return this;
     }
@@ -179,9 +189,9 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
      * @param renderer function to convert each item to a ListItem
      * @return this element
      */
-    public <U> ListElement<U> data(List<U> data, Function<U, ListItem> renderer) {
+    public <U> ListContainer<U> data(List<U> data, Function<U, ListItem> renderer) {
         @SuppressWarnings("unchecked")
-        ListElement<U> self = (ListElement<U>) this;
+        ListContainer<U> self = (ListContainer<U>) this;
         self.data = data;
         self.itemRenderer = renderer;
         self.items.clear();
@@ -196,7 +206,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
      * @param renderer function to convert each item to a ListItem
      * @return this element
      */
-    public ListElement<T> itemRenderer(Function<T, ListItem> renderer) {
+    public ListContainer<T> itemRenderer(Function<T, ListItem> renderer) {
         this.itemRenderer = renderer;
         return this;
     }
@@ -209,7 +219,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
      *
      * @return this element
      */
-    public ListElement<T> autoScroll() {
+    public ListContainer<T> autoScroll() {
         this.autoScroll = true;
         return this;
     }
@@ -220,7 +230,7 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
      * @param enabled true to enable auto-scroll
      * @return this element
      */
-    public ListElement<T> autoScroll(boolean enabled) {
+    public ListContainer<T> autoScroll(boolean enabled) {
         this.autoScroll = enabled;
         return this;
     }
@@ -240,7 +250,19 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
                 effectiveItems.add(itemRenderer.apply(item));
             }
         } else {
-            effectiveItems = items;
+            effectiveItems = new ArrayList<>(items);
+        }
+
+        // Apply CSS positional styles (odd/even, first/last) to each item
+        int totalItems = effectiveItems.size();
+        for (int i = 0; i < totalItems; i++) {
+            ChildPosition pos = ChildPosition.of(i, totalItems);
+            Style posStyle = context.childStyle("item", pos);
+            // Only apply if CSS defined something beyond the base style
+            if (!posStyle.equals(context.currentStyle())) {
+                ListItem original = effectiveItems.get(i);
+                effectiveItems.set(i, original.style(original.style().patch(posStyle)));
+            }
         }
 
         // Auto-scroll if enabled
@@ -257,9 +279,11 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
         // Resolve highlight style: explicit > CSS > default
         Style effectiveHighlightStyle = highlightStyle;
         if (effectiveHighlightStyle == null) {
-            effectiveHighlightStyle = context.resolveStyle("ListItem", "list-item-selected")
-                .map(resolved -> resolved.toStyle())
-                .orElse(DEFAULT_HIGHLIGHT_STYLE);
+            Style cssStyle = context.childStyle("item", PseudoClassState.ofSelected());
+            // Only use CSS style if it differs from base (meaning CSS defined something)
+            effectiveHighlightStyle = cssStyle.equals(context.currentStyle())
+                ? DEFAULT_HIGHLIGHT_STYLE
+                : cssStyle;
         }
 
         // Resolve highlight symbol: explicit > default

@@ -23,6 +23,7 @@ class PseudoClassStateTest {
             assertThat(PseudoClassState.NONE.isHovered()).isFalse();
             assertThat(PseudoClassState.NONE.isDisabled()).isFalse();
             assertThat(PseudoClassState.NONE.isActive()).isFalse();
+            assertThat(PseudoClassState.NONE.isSelected()).isFalse();
             assertThat(PseudoClassState.NONE.isFirstChild()).isFalse();
             assertThat(PseudoClassState.NONE.isLastChild()).isFalse();
         }
@@ -41,6 +42,7 @@ class PseudoClassStateTest {
             assertThat(state.isHovered()).isFalse();
             assertThat(state.isDisabled()).isFalse();
             assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isFalse();
             assertThat(state.isFirstChild()).isFalse();
             assertThat(state.isLastChild()).isFalse();
         }
@@ -54,6 +56,7 @@ class PseudoClassStateTest {
             assertThat(state.isHovered()).isTrue();
             assertThat(state.isDisabled()).isFalse();
             assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isFalse();
             assertThat(state.isFirstChild()).isFalse();
             assertThat(state.isLastChild()).isFalse();
         }
@@ -67,6 +70,21 @@ class PseudoClassStateTest {
             assertThat(state.isHovered()).isFalse();
             assertThat(state.isDisabled()).isTrue();
             assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isFalse();
+            assertThat(state.isFirstChild()).isFalse();
+            assertThat(state.isLastChild()).isFalse();
+        }
+
+        @Test
+        @DisplayName("ofSelected() creates state with only selected flag set")
+        void ofSelected() {
+            PseudoClassState state = PseudoClassState.ofSelected();
+
+            assertThat(state.isFocused()).isFalse();
+            assertThat(state.isHovered()).isFalse();
+            assertThat(state.isDisabled()).isFalse();
+            assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isTrue();
             assertThat(state.isFirstChild()).isFalse();
             assertThat(state.isLastChild()).isFalse();
         }
@@ -80,30 +98,34 @@ class PseudoClassStateTest {
         @DisplayName("Constructor sets all flags correctly")
         void constructorSetsAllFlags() {
             PseudoClassState state = new PseudoClassState(
-                    true, true, true, true, true, true
+                    true, true, true, true, true, true, true, 5
             );
 
             assertThat(state.isFocused()).isTrue();
             assertThat(state.isHovered()).isTrue();
             assertThat(state.isDisabled()).isTrue();
             assertThat(state.isActive()).isTrue();
+            assertThat(state.isSelected()).isTrue();
             assertThat(state.isFirstChild()).isTrue();
             assertThat(state.isLastChild()).isTrue();
+            assertThat(state.nthChild()).isEqualTo(5);
         }
 
         @Test
         @DisplayName("Constructor with mixed flags")
         void constructorWithMixedFlags() {
             PseudoClassState state = new PseudoClassState(
-                    true, false, true, false, true, false
+                    true, false, true, false, true, true, false, 0
             );
 
             assertThat(state.isFocused()).isTrue();
             assertThat(state.isHovered()).isFalse();
             assertThat(state.isDisabled()).isTrue();
             assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isTrue();
             assertThat(state.isFirstChild()).isTrue();
             assertThat(state.isLastChild()).isFalse();
+            assertThat(state.nthChild()).isEqualTo(0);
         }
     }
 
@@ -172,10 +194,20 @@ class PseudoClassStateTest {
         }
 
         @Test
+        @DisplayName("withSelected() returns new state with selected flag changed")
+        void withSelected() {
+            PseudoClassState original = PseudoClassState.NONE;
+            PseudoClassState modified = original.withSelected(true);
+
+            assertThat(modified.isSelected()).isTrue();
+            assertThat(original.isSelected()).isFalse();
+        }
+
+        @Test
         @DisplayName("with* methods preserve other flags")
         void withMethodsPreserveOtherFlags() {
             PseudoClassState state = new PseudoClassState(
-                    true, true, false, false, true, false
+                    true, true, false, false, true, true, false, 0
             );
 
             PseudoClassState modified = state.withDisabled(true);
@@ -184,6 +216,7 @@ class PseudoClassStateTest {
             assertThat(modified.isHovered()).isTrue();
             assertThat(modified.isDisabled()).isTrue();
             assertThat(modified.isActive()).isFalse();
+            assertThat(modified.isSelected()).isTrue();
             assertThat(modified.isFirstChild()).isTrue();
             assertThat(modified.isLastChild()).isFalse();
         }
@@ -194,12 +227,14 @@ class PseudoClassStateTest {
             PseudoClassState state = PseudoClassState.NONE
                     .withFocused(true)
                     .withHovered(true)
+                    .withSelected(true)
                     .withFirstChild(true);
 
             assertThat(state.isFocused()).isTrue();
             assertThat(state.isHovered()).isTrue();
             assertThat(state.isDisabled()).isFalse();
             assertThat(state.isActive()).isFalse();
+            assertThat(state.isSelected()).isTrue();
             assertThat(state.isFirstChild()).isTrue();
             assertThat(state.isLastChild()).isFalse();
         }
@@ -258,10 +293,18 @@ class PseudoClassStateTest {
         }
 
         @Test
+        @DisplayName("has() returns true for selected when selected")
+        void hasSelected() {
+            PseudoClassState state = PseudoClassState.ofSelected();
+
+            assertThat(state.has("selected")).isTrue();
+        }
+
+        @Test
         @DisplayName("has() returns false for unknown pseudo-class")
         void hasUnknown() {
             PseudoClassState state = new PseudoClassState(
-                    true, true, true, true, true, true
+                    true, true, true, true, true, true, true, 0
             );
 
             assertThat(state.has("unknown")).isFalse();
@@ -278,6 +321,7 @@ class PseudoClassStateTest {
             assertThat(state.has("hover")).isFalse();
             assertThat(state.has("disabled")).isFalse();
             assertThat(state.has("active")).isFalse();
+            assertThat(state.has("selected")).isFalse();
             assertThat(state.has("first-child")).isFalse();
             assertThat(state.has("last-child")).isFalse();
         }
@@ -291,10 +335,10 @@ class PseudoClassStateTest {
         @DisplayName("equals() returns true for same state")
         void equalsForSameState() {
             PseudoClassState state1 = new PseudoClassState(
-                    true, false, true, false, true, false
+                    true, false, true, false, true, true, false, 3
             );
             PseudoClassState state2 = new PseudoClassState(
-                    true, false, true, false, true, false
+                    true, false, true, false, true, true, false, 3
             );
 
             assertThat(state1).isEqualTo(state2);
@@ -337,10 +381,10 @@ class PseudoClassStateTest {
         @DisplayName("hashCode() is same for equal states")
         void hashCodeSameForEqualStates() {
             PseudoClassState state1 = new PseudoClassState(
-                    true, true, false, false, true, true
+                    true, true, false, false, true, true, true, 2
             );
             PseudoClassState state2 = new PseudoClassState(
-                    true, true, false, false, true, true
+                    true, true, false, false, true, true, true, 2
             );
 
             assertThat(state1.hashCode()).isEqualTo(state2.hashCode());
@@ -357,6 +401,68 @@ class PseudoClassStateTest {
     }
 
     @Nested
+    @DisplayName("nth-child support")
+    class NthChildSupport {
+
+        @Test
+        @DisplayName("withNthChild() returns new state with nthChild set")
+        void withNthChild() {
+            PseudoClassState original = PseudoClassState.NONE;
+            PseudoClassState modified = original.withNthChild(3);
+
+            assertThat(modified.nthChild()).isEqualTo(3);
+            assertThat(original.nthChild()).isEqualTo(0); // Original unchanged
+        }
+
+        @Test
+        @DisplayName("has('nth-child(even)') returns true for even positions")
+        void hasNthChildEven() {
+            // nthChild is 1-based, so even = 2, 4, 6, ...
+            assertThat(PseudoClassState.NONE.withNthChild(2).has("nth-child(even)")).isTrue();
+            assertThat(PseudoClassState.NONE.withNthChild(4).has("nth-child(even)")).isTrue();
+            assertThat(PseudoClassState.NONE.withNthChild(6).has("nth-child(even)")).isTrue();
+
+            assertThat(PseudoClassState.NONE.withNthChild(1).has("nth-child(even)")).isFalse();
+            assertThat(PseudoClassState.NONE.withNthChild(3).has("nth-child(even)")).isFalse();
+            assertThat(PseudoClassState.NONE.withNthChild(5).has("nth-child(even)")).isFalse();
+        }
+
+        @Test
+        @DisplayName("has('nth-child(odd)') returns true for odd positions")
+        void hasNthChildOdd() {
+            // nthChild is 1-based, so odd = 1, 3, 5, ...
+            assertThat(PseudoClassState.NONE.withNthChild(1).has("nth-child(odd)")).isTrue();
+            assertThat(PseudoClassState.NONE.withNthChild(3).has("nth-child(odd)")).isTrue();
+            assertThat(PseudoClassState.NONE.withNthChild(5).has("nth-child(odd)")).isTrue();
+
+            assertThat(PseudoClassState.NONE.withNthChild(2).has("nth-child(odd)")).isFalse();
+            assertThat(PseudoClassState.NONE.withNthChild(4).has("nth-child(odd)")).isFalse();
+            assertThat(PseudoClassState.NONE.withNthChild(6).has("nth-child(odd)")).isFalse();
+        }
+
+        @Test
+        @DisplayName("has('nth-child(even/odd)') returns false when nthChild is 0")
+        void hasNthChildReturnsFalseWhenNotSet() {
+            PseudoClassState state = PseudoClassState.NONE;
+
+            assertThat(state.nthChild()).isEqualTo(0);
+            assertThat(state.has("nth-child(even)")).isFalse();
+            assertThat(state.has("nth-child(odd)")).isFalse();
+        }
+
+        @Test
+        @DisplayName("withNthChild() preserves other flags")
+        void withNthChildPreservesOtherFlags() {
+            PseudoClassState state = PseudoClassState.ofSelected().withFirstChild(true);
+            PseudoClassState modified = state.withNthChild(5);
+
+            assertThat(modified.isSelected()).isTrue();
+            assertThat(modified.isFirstChild()).isTrue();
+            assertThat(modified.nthChild()).isEqualTo(5);
+        }
+    }
+
+    @Nested
     @DisplayName("toString()")
     class ToStringTest {
 
@@ -364,7 +470,7 @@ class PseudoClassStateTest {
         @DisplayName("toString() includes all flag values")
         void toStringIncludesAllFlags() {
             PseudoClassState state = new PseudoClassState(
-                    true, false, true, false, true, false
+                    true, false, true, false, true, true, false, 3
             );
 
             String str = state.toString();
@@ -373,8 +479,10 @@ class PseudoClassStateTest {
             assertThat(str).contains("hovered=false");
             assertThat(str).contains("disabled=true");
             assertThat(str).contains("active=false");
+            assertThat(str).contains("selected=true");
             assertThat(str).contains("firstChild=true");
             assertThat(str).contains("lastChild=false");
+            assertThat(str).contains("nthChild=3");
         }
 
         @Test
