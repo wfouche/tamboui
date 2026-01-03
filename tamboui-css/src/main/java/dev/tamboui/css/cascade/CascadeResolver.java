@@ -7,9 +7,8 @@ package dev.tamboui.css.cascade;
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.model.PropertyValue;
 import dev.tamboui.css.model.Rule;
+import dev.tamboui.css.property.PropertyConverter;
 import dev.tamboui.css.property.PropertyRegistry;
-import dev.tamboui.style.Color;
-import dev.tamboui.style.Modifier;
 
 import java.util.*;
 
@@ -138,23 +137,12 @@ public final class CascadeResolver {
                     break;
                 default:
                     // Store as additional property for later use
-                    builder.property(prop, resolveVariables(value, variables));
+                    builder.property(prop, PropertyConverter.resolveVariables(value, variables));
                     break;
             }
         }
 
         return builder.build();
-    }
-
-    private String resolveVariables(String value, Map<String, String> variables) {
-        if (value == null || !value.contains("$")) {
-            return value;
-        }
-        String result = value;
-        for (Map.Entry<String, String> entry : variables.entrySet()) {
-            result = result.replace("$" + entry.getKey(), entry.getValue());
-        }
-        return result;
     }
 
     /**

@@ -29,7 +29,7 @@ public final class WidthConverter implements PropertyConverter<Width> {
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim(), variables).toLowerCase();
+        String resolved = PropertyConverter.resolveVariables(value.trim(), variables).toLowerCase();
 
         // Named values
         switch (resolved) {

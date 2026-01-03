@@ -49,7 +49,7 @@ public final class ModifierConverter implements PropertyConverter<Set<Modifier>>
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim().toLowerCase(), variables);
+        String resolved = PropertyConverter.resolveVariables(value.trim().toLowerCase(), variables);
         String[] parts = resolved.split("\\s+");
 
         Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);

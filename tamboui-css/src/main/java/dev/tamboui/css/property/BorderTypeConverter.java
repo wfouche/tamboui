@@ -36,7 +36,7 @@ public final class BorderTypeConverter implements PropertyConverter<BorderType> 
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim(), variables).toLowerCase();
+        String resolved = PropertyConverter.resolveVariables(value.trim(), variables).toLowerCase();
 
         switch (resolved) {
             case "plain":

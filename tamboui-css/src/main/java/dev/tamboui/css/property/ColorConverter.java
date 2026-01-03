@@ -72,7 +72,7 @@ public final class ColorConverter implements PropertyConverter<Color> {
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim().toLowerCase(), variables);
+        String resolved = PropertyConverter.resolveVariables(value.trim().toLowerCase(), variables);
 
         // Named color
         Color named = NAMED_COLORS.get(resolved);

@@ -27,7 +27,7 @@ public final class SpacingConverter implements PropertyConverter<Padding> {
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim(), variables);
+        String resolved = PropertyConverter.resolveVariables(value.trim(), variables);
         String[] parts = resolved.split("\\s+");
 
         try {

@@ -27,7 +27,7 @@ public final class AlignmentConverter implements PropertyConverter<Alignment> {
             return Optional.empty();
         }
 
-        String resolved = resolveVariables(value.trim(), variables).toLowerCase();
+        String resolved = PropertyConverter.resolveVariables(value.trim(), variables).toLowerCase();
 
         switch (resolved) {
             case "left":
