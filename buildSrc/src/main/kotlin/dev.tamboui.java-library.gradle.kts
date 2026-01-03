@@ -8,5 +8,7 @@ dependencies {
     val libs = versionCatalogs.named("libs")
     testImplementation(platform(libs.findLibrary("junit.bom").orElseThrow()))
     testImplementation(libs.findBundle("testing").orElseThrow())
-    signature("org.codehaus.mojo.signature:java18:1.0@signature")
+    signature(libs.findLibrary("sniffer18-signature").orElseThrow()) {
+        artifact { type = "signature" }
+    }
 }
