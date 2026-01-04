@@ -7,7 +7,9 @@ include(
     "tamboui-jline",
     "tamboui-tui",
     "tamboui-picocli",
-    "tamboui-toolkit"
+    "tamboui-toolkit",
+    "tamboui-annotations",
+    "tamboui-processor"
 )
 
 File(settingsDir, "demos").listFiles()?.forEach {

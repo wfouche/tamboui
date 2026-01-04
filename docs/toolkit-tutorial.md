@@ -13,7 +13,8 @@ This tutorial explains how to build terminal user interfaces (TUIs) using the Ta
 6. [Focus Management](#focus-management)
 7. [Styling](#styling)
 8. [Advanced Patterns](#advanced-patterns)
-9. [Complete Example](#complete-example)
+9. [Custom Components](#custom-components)
+10. [Complete Example](#complete-example)
 
 ---
 
@@ -1356,6 +1357,119 @@ public class MyApp {
 3. **Transparent dialog backgrounds**: Use `Clear.INSTANCE` before rendering overlays
 4. **Returning UNHANDLED in input mode**: Unwanted characters may leak through
 5. **Key binding conflicts**: With the `vim` keymap, `event.isUp()` etc. match vim keys (hjkl). Use the `standard` keymap (default) or check `event.code()` directly for precise control
+
+---
+
+## Custom Components
+
+For reusable, stateful UI elements with their own event handling, extend the `Component` class. Components automatically:
+
+- Integrate with focus management
+- Support `@OnAction` annotations for declarative event handling
+- Access focus state via `isFocused()`
+
+### Creating a Custom Component
+
+```java
+import dev.tamboui.toolkit.component.Component;
+import dev.tamboui.toolkit.element.Element;
+import dev.tamboui.tui.bindings.OnAction;
+import dev.tamboui.tui.event.Event;
+
+import static dev.tamboui.toolkit.Toolkit.*;
+
+public class CounterCard extends Component<CounterCard> {
+    private int count = 0;
+
+    // @OnAction methods are automatically registered
+    @OnAction("increment")
+    void onIncrement(Event event) {
+        count++;
+    }
+
+    @OnAction("decrement")
+    void onDecrement(Event event) {
+        count--;
+    }
+
+    @Override
+    protected Element render() {
+        // Access focus state directly
+        var borderColor = isFocused() ? Color.CYAN : Color.GRAY;
+
+        return panel(() -> column(
+                text("Count: " + count).bold(),
+                text("Press +/- to change").dim()
+        ))
+                .rounded()
+                .borderColor(borderColor)
+                .fill();
+    }
+}
+```
+
+### Using Custom Components
+
+Components **must have an ID** for focus and event handling to work:
+
+```java
+// Create component instances (reuse across renders)
+var counter1 = new CounterCard().id("counter-1");
+var counter2 = new CounterCard().id("counter-2");
+
+// Define bindings for custom actions
+var bindings = BindingSets.standard()
+        .toBuilder()
+        .bind("increment", KeyTrigger.ch('+'), KeyTrigger.ch('='))
+        .bind("decrement", KeyTrigger.ch('-'), KeyTrigger.ch('_'))
+        .build();
+
+try (var runner = ToolkitRunner.builder()
+        .bindings(bindings)
+        .build()) {
+
+    runner.run(() -> row(counter1, counter2));
+}
+```
+
+### How It Works
+
+1. **Bindings define action triggers**: `"increment"` is bound to `+` and `=` keys
+2. **Component registers @OnAction methods**: On first render, Component creates an ActionHandler and registers annotated methods
+3. **Focused component receives events**: When a component is focused, key events are dispatched to its ActionHandler
+4. **Methods are invoked**: Matching action triggers invoke the corresponding `@OnAction` method
+
+### Annotation Processing (Optional)
+
+For best performance, use the annotation processor to generate registrars at compile time:
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("dev.tamboui:tamboui-toolkit:VERSION")
+    implementation("dev.tamboui:tamboui-annotations:VERSION")
+    annotationProcessor("dev.tamboui:tamboui-processor:VERSION")
+}
+```
+
+If the annotation processor is not configured, `@OnAction` methods are discovered via reflection at runtime (works but slightly slower startup).
+
+### Component vs StyledElement
+
+| Feature | Component | StyledElement |
+|---------|-----------|---------------|
+| Focus management | Automatic | Manual |
+| @OnAction support | Yes | No |
+| Event handling | Via @OnAction | Via onKeyEvent() |
+| ID required | Yes | Optional |
+| Use case | Stateful, interactive widgets | Simple, styled elements |
+
+### Best Practices
+
+1. **Create components once, reuse**: Don't create new instances in render functions
+2. **Always set an ID**: Components throw an exception if rendered without an ID
+3. **Use isFocused()**: For focus-dependent styling in render()
+4. **Define custom bindings**: For component-specific actions like "increment"
 
 ---
 

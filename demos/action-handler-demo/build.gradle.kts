@@ -2,7 +2,7 @@ plugins {
     id("dev.tamboui.demo-project")
 }
 
-description = "Demo showcasing custom CSS-styled components with @OnAction annotations"
+description = "Demo showcasing ActionHandler with programmatic and annotation APIs"
 
 dependencies {
     implementation(projects.tambouiToolkit)
@@ -11,7 +11,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.tamboui.demo.CustomComponentDemo")
+    mainClass.set("dev.tamboui.demo.actionhandler.ActionHandlerDemo")
 }
 
 tasks.withType<JavaCompile>().configureEach {
