@@ -199,7 +199,7 @@ public final class TuiRunner implements AutoCloseable {
 
         // Read from terminal
         try {
-            return EventParser.readEvent(backend, (int) timeout.toMillis(), config.keyMap());
+            return EventParser.readEvent(backend, (int) timeout.toMillis(), config.bindings());
         } catch (IOException e) {
             return null;
         }

@@ -2,16 +2,17 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.tui.keymap;
+package dev.tamboui.tui.bindings;
 
+import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.KeyModifiers;
 
 /**
- * Represents a key binding that can match a {@link KeyEvent}.
+ * An {@link InputTrigger} that matches {@link KeyEvent}s.
  * <p>
- * Bindings can match:
+ * Key triggers can match:
  * <ul>
  *   <li>A specific {@link KeyCode} (e.g., UP, ENTER)</li>
  *   <li>A character with optional modifiers (e.g., 'k', Ctrl+'u')</li>
@@ -19,25 +20,25 @@ import dev.tamboui.tui.event.KeyModifiers;
  *
  * <pre>{@code
  * // Match the UP arrow key
- * KeyBinding.key(KeyCode.UP)
+ * KeyTrigger.key(KeyCode.UP)
  *
  * // Match lowercase 'j'
- * KeyBinding.ch('j')
+ * KeyTrigger.ch('j')
  *
  * // Match 'j' or 'J' (case-insensitive)
- * KeyBinding.chIgnoreCase('j')
+ * KeyTrigger.chIgnoreCase('j')
  *
  * // Match Ctrl+U
- * KeyBinding.ctrl('u')
+ * KeyTrigger.ctrl('u')
  *
  * // Match Alt+V
- * KeyBinding.alt('v')
+ * KeyTrigger.alt('v')
  *
  * // Match Shift+Tab
- * KeyBinding.key(KeyCode.TAB, false, false, true)
+ * KeyTrigger.key(KeyCode.TAB, false, false, true)
  * }</pre>
  */
-public final class KeyBinding {
+public final class KeyTrigger implements InputTrigger {
 
     private final KeyCode keyCode;
     private final Character character;
@@ -46,7 +47,7 @@ public final class KeyBinding {
     private final boolean shift;
     private final boolean ignoreCase;
 
-    private KeyBinding(KeyCode keyCode, Character character,
+    private KeyTrigger(KeyCode keyCode, Character character,
                        boolean ctrl, boolean alt, boolean shift, boolean ignoreCase) {
         this.keyCode = keyCode;
         this.character = character;
@@ -57,83 +58,91 @@ public final class KeyBinding {
     }
 
     /**
-     * Creates a binding for a special key code without modifiers.
+     * Creates a trigger for a special key code without modifiers.
      *
      * @param code the key code
-     * @return a binding that matches the specified key
+     * @return a trigger that matches the specified key
      */
-    public static KeyBinding key(KeyCode code) {
-        return new KeyBinding(code, null, false, false, false, false);
+    public static KeyTrigger key(KeyCode code) {
+        return new KeyTrigger(code, null, false, false, false, false);
     }
 
     /**
-     * Creates a binding for a special key code with modifiers.
+     * Creates a trigger for a special key code with modifiers.
      *
      * @param code  the key code
      * @param ctrl  true if Ctrl must be pressed
      * @param alt   true if Alt must be pressed
      * @param shift true if Shift must be pressed
-     * @return a binding that matches the specified key with modifiers
+     * @return a trigger that matches the specified key with modifiers
      */
-    public static KeyBinding key(KeyCode code, boolean ctrl, boolean alt, boolean shift) {
-        return new KeyBinding(code, null, ctrl, alt, shift, false);
+    public static KeyTrigger key(KeyCode code, boolean ctrl, boolean alt, boolean shift) {
+        return new KeyTrigger(code, null, ctrl, alt, shift, false);
     }
 
     /**
-     * Creates a binding for a character (case-sensitive).
+     * Creates a trigger for a character (case-sensitive).
      *
      * @param c the character to match
-     * @return a binding that matches the exact character
+     * @return a trigger that matches the exact character
      */
-    public static KeyBinding ch(char c) {
-        return new KeyBinding(KeyCode.CHAR, c, false, false, false, false);
+    public static KeyTrigger ch(char c) {
+        return new KeyTrigger(KeyCode.CHAR, c, false, false, false, false);
     }
 
     /**
-     * Creates a binding for a character (case-insensitive).
+     * Creates a trigger for a character (case-insensitive).
      *
      * @param c the character to match (case-insensitive)
-     * @return a binding that matches the character regardless of case
+     * @return a trigger that matches the character regardless of case
      */
-    public static KeyBinding chIgnoreCase(char c) {
-        return new KeyBinding(KeyCode.CHAR, c, false, false, false, true);
+    public static KeyTrigger chIgnoreCase(char c) {
+        return new KeyTrigger(KeyCode.CHAR, c, false, false, false, true);
     }
 
     /**
-     * Creates a binding for Ctrl+character.
+     * Creates a trigger for Ctrl+character.
      *
      * @param c the character
-     * @return a binding that matches Ctrl+c
+     * @return a trigger that matches Ctrl+c
      */
-    public static KeyBinding ctrl(char c) {
-        return new KeyBinding(KeyCode.CHAR, c, true, false, false, false);
+    public static KeyTrigger ctrl(char c) {
+        return new KeyTrigger(KeyCode.CHAR, c, true, false, false, false);
     }
 
     /**
-     * Creates a binding for Alt+character.
+     * Creates a trigger for Alt+character.
      *
      * @param c the character
-     * @return a binding that matches Alt+c
+     * @return a trigger that matches Alt+c
      */
-    public static KeyBinding alt(char c) {
-        return new KeyBinding(KeyCode.CHAR, c, false, true, false, false);
+    public static KeyTrigger alt(char c) {
+        return new KeyTrigger(KeyCode.CHAR, c, false, true, false, false);
+    }
+
+    @Override
+    public boolean matches(Event event) {
+        if (!(event instanceof KeyEvent)) {
+            return false;
+        }
+        return matchesKey((KeyEvent) event);
     }
 
     /**
-     * Returns true if this binding matches the given event.
+     * Returns true if this trigger matches the given key event.
      * <p>
      * Matching rules:
      * <ul>
      *   <li>Key code must match</li>
      *   <li>Ctrl and Alt modifiers must match exactly</li>
-     *   <li>Shift is only checked if explicitly required by the binding</li>
-     *   <li>For character bindings, the character must match (respecting ignoreCase)</li>
+     *   <li>Shift is only checked if explicitly required by the trigger</li>
+     *   <li>For character triggers, the character must match (respecting ignoreCase)</li>
      * </ul>
      *
      * @param event the key event to match against
-     * @return true if this binding matches the event
+     * @return true if this trigger matches the event
      */
-    public boolean matches(KeyEvent event) {
+    public boolean matchesKey(KeyEvent event) {
         // Check key code first
         if (event.code() != keyCode) {
             return false;
@@ -162,7 +171,7 @@ public final class KeyBinding {
     }
 
     @Override
-    public String toString() {
+    public String describe() {
         StringBuilder sb = new StringBuilder();
         if (ctrl) {
             sb.append("Ctrl+");
@@ -221,14 +230,19 @@ public final class KeyBinding {
     }
 
     @Override
+    public String toString() {
+        return describe();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof KeyBinding)) {
+        if (!(o instanceof KeyTrigger)) {
             return false;
         }
-        KeyBinding that = (KeyBinding) o;
+        KeyTrigger that = (KeyTrigger) o;
         return ctrl == that.ctrl &&
                alt == that.alt &&
                shift == that.shift &&

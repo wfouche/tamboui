@@ -4,8 +4,8 @@
  */
 package dev.tamboui.tui;
 
-import dev.tamboui.tui.keymap.KeyMap;
-import dev.tamboui.tui.keymap.KeyMaps;
+import dev.tamboui.tui.bindings.Bindings;
+import dev.tamboui.tui.bindings.BindingSets;
 
 import java.time.Duration;
 
@@ -21,7 +21,7 @@ public final class TuiConfig {
     private final Duration pollTimeout;
     private final Duration tickRate;
     private final boolean shutdownHook;
-    private final KeyMap keyMap;
+    private final Bindings bindings;
 
     public TuiConfig(
             boolean rawMode,
@@ -31,7 +31,7 @@ public final class TuiConfig {
             Duration pollTimeout,
             Duration tickRate,
             boolean shutdownHook,
-            KeyMap keyMap
+            Bindings bindings
     ) {
         this.rawMode = rawMode;
         this.alternateScreen = alternateScreen;
@@ -40,7 +40,7 @@ public final class TuiConfig {
         this.pollTimeout = pollTimeout;
         this.tickRate = tickRate;
         this.shutdownHook = shutdownHook;
-        this.keyMap = keyMap;
+        this.bindings = bindings;
     }
 
     /**
@@ -58,7 +58,7 @@ public final class TuiConfig {
                 Duration.ofMillis(100),      // pollTimeout
                 Duration.ofMillis(100),      // tickRate
                 true,                        // shutdownHook
-                KeyMaps.defaults()           // keyMap
+                BindingSets.defaults()       // bindings
         );
     }
 
@@ -136,13 +136,13 @@ public final class TuiConfig {
     }
 
     /**
-     * Returns the keymap used for semantic key action matching.
+     * Returns the bindings used for semantic action matching.
      *
-     * @return the configured keymap
-     * @see KeyMaps
+     * @return the configured bindings
+     * @see BindingSets
      */
-    public KeyMap keyMap() {
-        return keyMap;
+    public Bindings bindings() {
+        return bindings;
     }
 
     @Override
@@ -160,7 +160,7 @@ public final class TuiConfig {
                 && mouseCapture == that.mouseCapture
                 && pollTimeout.equals(that.pollTimeout)
                 && (tickRate != null ? tickRate.equals(that.tickRate) : that.tickRate == null)
-                && keyMap.equals(that.keyMap);
+                && bindings.equals(that.bindings);
     }
 
     @Override
@@ -171,14 +171,14 @@ public final class TuiConfig {
         result = 31 * result + Boolean.hashCode(mouseCapture);
         result = 31 * result + pollTimeout.hashCode();
         result = 31 * result + (tickRate != null ? tickRate.hashCode() : 0);
-        result = 31 * result + keyMap.hashCode();
+        result = 31 * result + bindings.hashCode();
         return result;
     }
 
     @Override
     public String toString() {
         return String.format(
-                "TuiConfig[rawMode=%s, alternateScreen=%s, hideCursor=%s, mouseCapture=%s, pollTimeout=%s, tickRate=%s, shutdownHook=%s, keyMap=%s]",
+                "TuiConfig[rawMode=%s, alternateScreen=%s, hideCursor=%s, mouseCapture=%s, pollTimeout=%s, tickRate=%s, shutdownHook=%s, bindings=%s]",
                 rawMode,
                 alternateScreen,
                 hideCursor,
@@ -186,7 +186,7 @@ public final class TuiConfig {
                 pollTimeout,
                 tickRate,
                 shutdownHook,
-                keyMap
+                bindings
         );
     }
 
@@ -201,7 +201,7 @@ public final class TuiConfig {
         private Duration pollTimeout = Duration.ofMillis(100);
         private Duration tickRate = Duration.ofMillis(100);
         private boolean shutdownHook = true;
-        private KeyMap keyMap = KeyMaps.defaults();
+        private Bindings bindings = BindingSets.defaults();
 
         private Builder() {
         }
@@ -297,22 +297,22 @@ public final class TuiConfig {
         }
 
         /**
-         * Sets the keymap for semantic key action matching.
+         * Sets the bindings for semantic action matching.
          * <p>
-         * Use predefined keymaps from {@link KeyMaps}:
+         * Use predefined binding sets from {@link BindingSets}:
          * <ul>
-         *   <li>{@link KeyMaps#standard()} - Arrow keys only (default)</li>
-         *   <li>{@link KeyMaps#vim()} - Vim-style navigation (hjkl)</li>
-         *   <li>{@link KeyMaps#emacs()} - Emacs-style navigation (Ctrl+n/p/f/b)</li>
-         *   <li>{@link KeyMaps#intellij()} - IntelliJ IDEA-style</li>
-         *   <li>{@link KeyMaps#vscode()} - VS Code-style</li>
+         *   <li>{@link BindingSets#standard()} - Arrow keys only (default)</li>
+         *   <li>{@link BindingSets#vim()} - Vim-style navigation (hjkl)</li>
+         *   <li>{@link BindingSets#emacs()} - Emacs-style navigation (Ctrl+n/p/f/b)</li>
+         *   <li>{@link BindingSets#intellij()} - IntelliJ IDEA-style</li>
+         *   <li>{@link BindingSets#vscode()} - VS Code-style</li>
          * </ul>
          *
-         * @param keyMap the keymap to use
+         * @param bindings the bindings to use
          * @return this builder
          */
-        public Builder keyMap(KeyMap keyMap) {
-            this.keyMap = keyMap != null ? keyMap : KeyMaps.defaults();
+        public Builder bindings(Bindings bindings) {
+            this.bindings = bindings != null ? bindings : BindingSets.defaults();
             return this;
         }
 
@@ -328,7 +328,7 @@ public final class TuiConfig {
                     pollTimeout,
                     tickRate,
                     shutdownHook,
-                    keyMap
+                    bindings
             );
         }
     }
