@@ -24,6 +24,7 @@ tasks.withType<JavaCompile>().configureEach {
         "-Werror",
         "-Xlint:-options"
     ))
+    options.release = 8
 }
 
 tasks.withType<Test> {

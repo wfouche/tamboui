@@ -6,6 +6,7 @@ package dev.tamboui.css.property;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,7 +16,8 @@ class PropertyConverterTest {
 
     @Test
     void resolveVariables_simpleReplacement() {
-        Map<String, String> variables = Map.of("color", "red");
+        Map<String, String> variables = new HashMap<>();
+        variables.put("color", "red");
         String result = PropertyConverter.resolveVariables("$color", variables);
         assertThat(result).isEqualTo("red");
     }
@@ -23,21 +25,25 @@ class PropertyConverterTest {
     @Test
     void resolveVariables_hyphenatedVariableName() {
         // Variable names can contain hyphens (like CSS custom properties)
-        Map<String, String> variables = Map.of("primary-color", "blue");
+        Map<String, String> variables = new HashMap<>();
+        variables.put("primary-color", "blue");
         String result = PropertyConverter.resolveVariables("color: $primary-color;", variables);
         assertThat(result).isEqualTo("color: blue;");
     }
 
     @Test
     void resolveVariables_multipleVariables() {
-        Map<String, String> variables = Map.of("fg", "black", "bg", "white");
+        Map<String, String> variables = new HashMap<>();
+        variables.put("fg", "black");
+        variables.put("bg", "white");
         String result = PropertyConverter.resolveVariables("fg=$fg bg=$bg", variables);
         assertThat(result).isEqualTo("fg=black bg=white");
     }
 
     @Test
     void resolveVariables_noVariables() {
-        Map<String, String> variables = Map.of("color", "red");
+        Map<String, String> variables = new HashMap<>();
+        variables.put("color", "red");
         String result = PropertyConverter.resolveVariables("plain text", variables);
         assertThat(result).isEqualTo("plain text");
     }

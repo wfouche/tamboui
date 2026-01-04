@@ -17,8 +17,10 @@ import dev.tamboui.layout.Rect;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -110,7 +112,9 @@ public final class DefaultRenderContext implements RenderContext {
             return Optional.empty();
         }
 
-        Set<String> classes = cssClasses.length > 0 ? Set.of(cssClasses) : Collections.emptySet();
+        Set<String> classes = cssClasses.length > 0
+                ? new HashSet<>(Arrays.asList(cssClasses))
+                : Collections.emptySet();
         Styleable virtual = new VirtualStyleable(styleType, classes);
         ResolvedStyle resolved = styleEngine.resolve(virtual, PseudoClassState.NONE, Collections.emptyList());
         return resolved.hasProperties() ? Optional.of(resolved) : Optional.empty();
