@@ -4,22 +4,38 @@
  */
 package dev.tamboui.css.cascade;
 
-import dev.tamboui.style.Width;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Modifier;
+import dev.tamboui.style.PropertyKey;
+import dev.tamboui.style.PropertyResolver;
 import dev.tamboui.style.Style;
+import dev.tamboui.style.Width;
 import dev.tamboui.widgets.block.BorderType;
 import dev.tamboui.widgets.block.Padding;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * Represents the computed style for an element after cascade resolution.
+ * Represents the computed style for an element after CSS cascade resolution.
  * <p>
- * Contains all resolved CSS properties that can be applied to an element.
+ * Implements {@link PropertyResolver} to allow typed property access using
+ * {@link PropertyKey}s. Properties can be retrieved either through the legacy
+ * typed getters (e.g., {@link #foreground()}) or through the generic
+ * {@link #get(PropertyKey)} method.
+ * <p>
+ * Example usage with PropertyKey:
+ * <pre>{@code
+ * CssStyleResolver style = cascadeResolver.resolve(element, rules);
+ * Color borderColor = style.get(StandardPropertyKeys.BORDER_COLOR).orElse(Color.WHITE);
+ * }</pre>
  */
-public final class ResolvedStyle {
+public final class CssStyleResolver implements PropertyResolver {
 
     private final Color foreground;
     private final Color background;
@@ -30,14 +46,14 @@ public final class ResolvedStyle {
     private final Width width;
     private final Map<String, String> additionalProperties;
 
-    private ResolvedStyle(Color foreground,
-                          Color background,
-                          Set<Modifier> modifiers,
-                          Padding padding,
-                          Alignment alignment,
-                          BorderType borderType,
-                          Width width,
-                          Map<String, String> additionalProperties) {
+    private CssStyleResolver(Color foreground,
+                             Color background,
+                             Set<Modifier> modifiers,
+                             Padding padding,
+                             Alignment alignment,
+                             BorderType borderType,
+                             Width width,
+                             Map<String, String> additionalProperties) {
         this.foreground = foreground;
         this.background = background;
         this.modifiers = modifiers != null
@@ -52,13 +68,64 @@ public final class ResolvedStyle {
 
     /**
      * Creates an empty resolved style.
+     *
+     * @return an empty CssStyleResolver
      */
-    public static ResolvedStyle empty() {
-        return new ResolvedStyle(null, null, null, null, null, null, null, Collections.<String, String>emptyMap());
+    public static CssStyleResolver empty() {
+        return new CssStyleResolver(null, null, null, null, null, null, null,
+                Collections.<String, String>emptyMap());
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PropertyResolver implementation
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Retrieves a typed property value using the given property key.
+     * <p>
+     * Standard properties (color, background, border-color, text-align, border-type)
+     * are retrieved from dedicated fields. Other properties are looked up in
+     * {@link #additionalProperties} and converted using the key's converter.
+     *
+     * @param key the property key
+     * @param <T> the type of the property value
+     * @return the converted property value, or empty if not found or conversion fails
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> get(PropertyKey<T> key) {
+        String name = key.name();
+        // Check dedicated fields for standard properties
+        switch (name) {
+            case "color":
+                return (Optional<T>) Optional.ofNullable(foreground);
+            case "background":
+            case "background-color":
+                return (Optional<T>) Optional.ofNullable(background);
+            case "border-color":
+                // Border color is stored in additionalProperties or can be derived from foreground
+                Optional<String> borderColorStr = getProperty("border-color");
+                if (borderColorStr.isPresent()) {
+                    return borderColorStr.flatMap(key::convert);
+                }
+                return Optional.empty();
+            case "text-align":
+                return (Optional<T>) Optional.ofNullable(alignment);
+            case "border-type":
+                return (Optional<T>) Optional.ofNullable(borderType);
+            default:
+                return getProperty(name).flatMap(key::convert);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Legacy typed property accessors
+    // ═══════════════════════════════════════════════════════════════
 
     /**
      * Returns the foreground color, if set.
+     *
+     * @return the foreground color
      */
     public Optional<Color> foreground() {
         return Optional.ofNullable(foreground);
@@ -66,6 +133,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns the background color, if set.
+     *
+     * @return the background color
      */
     public Optional<Color> background() {
         return Optional.ofNullable(background);
@@ -73,6 +142,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns the text modifiers.
+     *
+     * @return the set of modifiers
      */
     public Set<Modifier> modifiers() {
         return modifiers;
@@ -80,6 +151,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns the padding, if set.
+     *
+     * @return the padding
      */
     public Optional<Padding> padding() {
         return Optional.ofNullable(padding);
@@ -87,6 +160,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns the text alignment, if set.
+     *
+     * @return the alignment
      */
     public Optional<Alignment> alignment() {
         return Optional.ofNullable(alignment);
@@ -94,6 +169,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns the border type, if set.
+     *
+     * @return the border type
      */
     public Optional<BorderType> borderType() {
         return Optional.ofNullable(borderType);
@@ -102,6 +179,8 @@ public final class ResolvedStyle {
     /**
      * Returns the width behavior.
      * Defaults to {@link Width#FILL} if not explicitly set.
+     *
+     * @return the width
      */
     public Width width() {
         return width != null ? width : Width.FILL;
@@ -109,13 +188,18 @@ public final class ResolvedStyle {
 
     /**
      * Returns additional properties not mapped to specific fields.
+     *
+     * @return the additional properties map
      */
     public Map<String, String> additionalProperties() {
         return additionalProperties;
     }
 
     /**
-     * Gets an additional property value.
+     * Gets an additional property value by name.
+     *
+     * @param name the property name
+     * @return the property value, or empty if not found
      */
     public Optional<String> getProperty(String name) {
         return Optional.ofNullable(additionalProperties.get(name));
@@ -150,6 +234,8 @@ public final class ResolvedStyle {
 
     /**
      * Returns true if this style has any properties set.
+     *
+     * @return true if any properties are set
      */
     public boolean hasProperties() {
         return foreground != null || background != null ||
@@ -159,13 +245,15 @@ public final class ResolvedStyle {
 
     /**
      * Creates a new builder.
+     *
+     * @return a new builder
      */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
-     * Builder for ResolvedStyle.
+     * Builder for CssStyleResolver.
      */
     public static final class Builder {
         private Color foreground;
@@ -180,59 +268,120 @@ public final class ResolvedStyle {
         private Builder() {
         }
 
+        /**
+         * Sets the foreground color.
+         *
+         * @param color the foreground color
+         * @return this builder
+         */
         public Builder foreground(Color color) {
             this.foreground = color;
             return this;
         }
 
+        /**
+         * Sets the background color.
+         *
+         * @param color the background color
+         * @return this builder
+         */
         public Builder background(Color color) {
             this.background = color;
             return this;
         }
 
+        /**
+         * Adds a text modifier.
+         *
+         * @param modifier the modifier to add
+         * @return this builder
+         */
         public Builder addModifier(Modifier modifier) {
             this.modifiers.add(modifier);
             return this;
         }
 
+        /**
+         * Adds multiple text modifiers.
+         *
+         * @param modifiers the modifiers to add
+         * @return this builder
+         */
         public Builder addModifiers(Set<Modifier> modifiers) {
             this.modifiers.addAll(modifiers);
             return this;
         }
 
+        /**
+         * Sets the padding.
+         *
+         * @param padding the padding
+         * @return this builder
+         */
         public Builder padding(Padding padding) {
             this.padding = padding;
             return this;
         }
 
+        /**
+         * Sets the text alignment.
+         *
+         * @param alignment the alignment
+         * @return this builder
+         */
         public Builder alignment(Alignment alignment) {
             this.alignment = alignment;
             return this;
         }
 
+        /**
+         * Sets the border type.
+         *
+         * @param borderType the border type
+         * @return this builder
+         */
         public Builder borderType(BorderType borderType) {
             this.borderType = borderType;
             return this;
         }
 
+        /**
+         * Sets the width behavior.
+         *
+         * @param width the width
+         * @return this builder
+         */
         public Builder width(Width width) {
             this.width = width;
             return this;
         }
 
+        /**
+         * Adds an additional property.
+         *
+         * @param name  the property name
+         * @param value the property value
+         * @return this builder
+         */
         public Builder property(String name, String value) {
             this.additionalProperties.put(name, value);
             return this;
         }
 
-        public ResolvedStyle build() {
-            return new ResolvedStyle(foreground, background, modifiers, padding, alignment, borderType, width, additionalProperties);
+        /**
+         * Builds the CssStyleResolver.
+         *
+         * @return the built resolver
+         */
+        public CssStyleResolver build() {
+            return new CssStyleResolver(foreground, background, modifiers, padding,
+                    alignment, borderType, width, additionalProperties);
         }
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("ResolvedStyle{");
+        StringBuilder sb = new StringBuilder("CssStyleResolver{");
         if (foreground != null) {
             sb.append("fg=").append(foreground).append(", ");
         }
