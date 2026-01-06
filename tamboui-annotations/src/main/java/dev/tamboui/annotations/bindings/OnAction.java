@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.annotations;
+package dev.tamboui.annotations.bindings;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -4,7 +4,7 @@
  */
 package dev.tamboui.tui.bindings;
 
-import dev.tamboui.annotations.OnAction;
+import dev.tamboui.annotations.bindings.OnAction;
 import dev.tamboui.tui.event.Event;
 
 import java.lang.reflect.Method;

@@ -7,7 +7,7 @@ package dev.tamboui.demo;
 import dev.tamboui.style.Color;
 import dev.tamboui.toolkit.component.Component;
 import dev.tamboui.toolkit.element.Element;
-import dev.tamboui.annotations.OnAction;
+import dev.tamboui.annotations.bindings.OnAction;
 import dev.tamboui.tui.event.Event;
 
 import static dev.tamboui.toolkit.Toolkit.*;

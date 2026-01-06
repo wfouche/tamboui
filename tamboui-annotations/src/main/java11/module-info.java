@@ -10,5 +10,5 @@
  * such as {@code @OnAction} for declarative action handling.
  */
 module dev.tamboui.annotations {
-    exports dev.tamboui.annotations;
+    exports dev.tamboui.annotations.bindings;
 }
