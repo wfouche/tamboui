@@ -2,6 +2,10 @@
 
 set -e
 
+# Change to the script's directory to ensure relative paths work correctly
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
 # Modules that can contain demos
 MODULES="tamboui-widgets tamboui-toolkit tamboui-tui tamboui-css tamboui-picocli tamboui-image"
 
@@ -14,7 +18,7 @@ usage() {
 
     # List demos from root demos directory
     for dir in demos/*/; do
-        if [ -d "$dir" ]; then
+        if [ -d "$dir" ] && [ -f "$dir/build.gradle.kts" ]; then
             demo=$(basename "$dir")
             if [ "$demo" != "demo-selector" ]; then
                 echo "  - $demo"
@@ -26,7 +30,7 @@ usage() {
     for module in $MODULES; do
         if [ -d "$module/demos" ]; then
             for dir in "$module/demos"/*/; do
-                if [ -d "$dir" ]; then
+                if [ -d "$dir" ] && [ -f "$dir/build.gradle.kts" ]; then
                     demo=$(basename "$dir")
                     echo "  - $demo ($module)"
                 fi
@@ -36,13 +40,19 @@ usage() {
     exit 1
 }
 
+# Check if a directory is a valid demo project (has build.gradle.kts)
+is_valid_demo() {
+    local dir="$1"
+    [ -d "$dir" ] && [ -f "$dir/build.gradle.kts" ]
+}
+
 # Find a demo and return its Gradle path and install directory
 # Sets GRADLE_PATH and INSTALL_DIR variables
 find_demo() {
     local demo_name="$1"
 
     # Check root demos directory first
-    if [ -d "demos/$demo_name" ]; then
+    if is_valid_demo "demos/$demo_name"; then
         GRADLE_PATH=":demos:$demo_name"
         INSTALL_DIR="demos/$demo_name/build/install/$demo_name"
         NATIVE_DIR="demos/$demo_name/build/native/nativeCompile"
@@ -51,7 +61,7 @@ find_demo() {
 
     # Check module directories
     for module in $MODULES; do
-        if [ -d "$module/demos/$demo_name" ]; then
+        if is_valid_demo "$module/demos/$demo_name"; then
             GRADLE_PATH=":$module:demos:$demo_name"
             INSTALL_DIR="$module/demos/$demo_name/build/install/$demo_name"
             NATIVE_DIR="$module/demos/$demo_name/build/native/nativeCompile"
