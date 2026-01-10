@@ -17,4 +17,6 @@ module dev.tamboui.tui {
     exports dev.tamboui.tui;
     exports dev.tamboui.tui.bindings;
     exports dev.tamboui.tui.event;
+
+    opens dev.tamboui.tui.bindings;
 }
