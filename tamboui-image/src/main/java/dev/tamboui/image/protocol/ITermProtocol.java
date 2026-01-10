@@ -78,8 +78,8 @@ public final class ITermProtocol implements ImageProtocol {
         // inline=1: display inline (not as download)
         // width=N: display width in cells
         // height=N: display height in cells
-        // preserveAspectRatio=1: maintain aspect ratio
-        cmd.append(String.format("inline=1;width=%d;height=%d;preserveAspectRatio=1:",
+        // preserveAspectRatio=0: do not apply additional scaling (Image.scaleImage() handles it)
+        cmd.append(String.format("inline=1;width=%d;height=%d;preserveAspectRatio=0:",
             area.width(), area.height()));
 
         // Append base64 data

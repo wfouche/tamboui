@@ -77,7 +77,7 @@ public class ImageDemo {
     private boolean needsFullRedraw;
 
     public static void main(String[] args) throws Exception {
-        String customImagePath = args.length > 0 ? args[0] : null;
+        var customImagePath = args.length > 0 ? args[0] : null;
         new ImageDemo(customImagePath).run();
     }
 
@@ -96,13 +96,13 @@ public class ImageDemo {
     }
 
     public void run() throws Exception {
-        try (Backend backend = BackendFactory.create()) {
+        try (var backend = BackendFactory.create()) {
             this.currentBackend = backend;
             backend.enableRawMode();
             backend.enterAlternateScreen();
             backend.hideCursor();
 
-            Terminal<Backend> terminal = new Terminal<>(backend);
+            var terminal = new Terminal<Backend>(backend);
 
             // Handle resize
             backend.onResize(() -> {
@@ -128,7 +128,7 @@ public class ImageDemo {
                     renderNativeImage(backend);
                 }
 
-                int c = backend.read(100);
+                var c = backend.read(100);
                 handleInput(c);
             }
         }
@@ -139,7 +139,7 @@ public class ImageDemo {
      */
     private void renderNativeImage(Backend backend) throws IOException {
         // Calculate the image area (same as in ui())
-        Rect area = new Rect(0, 0, terminal().width(), terminal().height());
+        var area = new Rect(0, 0, terminal().width(), terminal().height());
         var layout = Layout.vertical()
             .constraints(
                 Constraint.length(3),   // Header
@@ -149,17 +149,14 @@ public class ImageDemo {
             )
             .split(area);
 
-        Rect imageArea = layout.get(2);
-        // Account for block borders
-        imageArea = new Rect(imageArea.x() + 1, imageArea.y() + 1,
-            imageArea.width() - 2, imageArea.height() - 2);
+        var imageArea = layout.get(2);
 
         if (imageArea.isEmpty()) {
             return;
         }
 
         // Create output stream that writes to backend
-        OutputStream rawOutput = new OutputStream() {
+        var rawOutput = new OutputStream() {
             @Override
             public void write(int b) throws IOException {
                 backend.writeRaw(new byte[] {(byte) b});
@@ -170,16 +167,28 @@ public class ImageDemo {
                 if (off == 0 && len == b.length) {
                     backend.writeRaw(b);
                 } else {
-                    byte[] slice = new byte[len];
+                    var slice = new byte[len];
                     System.arraycopy(b, off, slice, 0, len);
                     backend.writeRaw(slice);
                 }
             }
         };
 
-        // Render the image
+        // Create an Image widget (without block since it's already rendered by renderImage())
+        // and use its render method to properly apply scaling
+        var image = Image.builder()
+            .data(imageData)
+            .scaling(currentScaling)
+            .protocol(currentProtocol)
+            .build();
+
+        // Calculate inner area (accounting for block borders rendered in renderImage())
+        var innerArea = new Rect(imageArea.x() + 1, imageArea.y() + 1,
+            imageArea.width() - 2, imageArea.height() - 2);
+
+        // Render the image with raw output support
         try {
-            currentProtocol.render(imageData, imageArea, null, rawOutput);
+            image.render(innerArea, null, rawOutput);
             backend.flush();
         } catch (Exception e) {
             // Ignore rendering errors for native protocols
@@ -191,7 +200,7 @@ public class ImageDemo {
     }
 
     private void handleInput(int c) {
-        ImageProtocol previousProtocol = currentProtocol;
+        var previousProtocol = currentProtocol;
 
         switch (c) {
             case 'q':
@@ -246,7 +255,7 @@ public class ImageDemo {
     }
 
     private void ui(Frame frame) {
-        Rect area = frame.area();
+        var area = frame.area();
 
         var layout = Layout.vertical()
             .constraints(
@@ -264,7 +273,7 @@ public class ImageDemo {
     }
 
     private void renderHeader(Frame frame, Rect area) {
-        Block headerBlock = Block.builder()
+        var headerBlock = Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.ROUNDED)
             .borderStyle(Style.EMPTY.fg(Color.CYAN))
@@ -280,16 +289,16 @@ public class ImageDemo {
     }
 
     private void renderCapabilities(Frame frame, Rect area) {
-        TerminalImageProtocol best = capabilities.bestSupport();
+        var best = capabilities.bestSupport();
 
-        Line titleLine = Line.from(Span.raw(" Terminal Capabilities ").bold().green());
+        var titleLine = Line.from(Span.raw(" Terminal Capabilities ").bold().green());
 
-        Line detectedLine = Line.from(
+        var detectedLine = Line.from(
             Span.raw("  Best detected: ").dim(),
             supportSpan(best)
         );
 
-        Line supportLine = Line.from(
+        var supportLine = Line.from(
             Span.raw("  Supported: ").dim(),
             capabilities.supports(TerminalImageProtocol.KITTY) ? Span.raw("Kitty ").green() : Span.raw("Kitty ").dim(),
             capabilities.supports(TerminalImageProtocol.ITERM2) ? Span.raw("iTerm2 ").green() : Span.raw("iTerm2 ").dim(),
@@ -298,7 +307,7 @@ public class ImageDemo {
             capabilities.supports(TerminalImageProtocol.BRAILLE) ? Span.raw("Braille ").green() : Span.raw("Braille ").dim()
         );
 
-        Line currentLine = Line.from(
+        var currentLine = Line.from(
             Span.raw("  Current protocol: ").dim(),
             Span.raw(currentProtocol.name()).bold().yellow(),
             Span.raw(" (").dim(),
@@ -307,12 +316,12 @@ public class ImageDemo {
             Span.raw(" per cell)").dim()
         );
 
-        Line scalingLine = Line.from(
+        var scalingLine = Line.from(
             Span.raw("  Scaling mode: ").dim(),
             Span.raw(currentScaling.name()).bold().magenta()
         );
 
-        Paragraph info = Paragraph.builder()
+        var info = Paragraph.builder()
             .text(Text.from(titleLine, detectedLine, supportLine, currentLine, scalingLine))
             .block(Block.builder()
                 .borders(Borders.ALL)
@@ -342,7 +351,7 @@ public class ImageDemo {
     }
 
     private void renderImage(Frame frame, Rect area) {
-        Image image = Image.builder()
+        var image = Image.builder()
             .data(imageData)
             .scaling(currentScaling)
             .protocol(currentProtocol)
@@ -358,7 +367,7 @@ public class ImageDemo {
     }
 
     private void renderFooter(Frame frame, Rect area) {
-        Line helpLine1 = Line.from(
+        var helpLine1 = Line.from(
             Span.raw(" Protocol: ").dim(),
             Span.raw("1").bold().yellow(),
             Span.raw(" Half-Block ").dim(),
@@ -374,7 +383,7 @@ public class ImageDemo {
             Span.raw(" Auto").dim()
         );
 
-        Line helpLine2 = Line.from(
+        var helpLine2 = Line.from(
             Span.raw(" Scaling: ").dim(),
             Span.raw("f").bold().yellow(),
             Span.raw(" Fit  ").dim(),
@@ -388,7 +397,7 @@ public class ImageDemo {
             Span.raw(" Quit").dim()
         );
 
-        Paragraph footer = Paragraph.builder()
+        var footer = Paragraph.builder()
             .text(Text.from(helpLine1, helpLine2))
             .block(Block.builder()
                 .borders(Borders.ALL)

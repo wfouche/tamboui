@@ -51,22 +51,13 @@ public final class KittyProtocol implements ImageProtocol {
             return;
         }
 
-        // Calculate pixel dimensions based on area
-        // Assume typical cell size of 8x16 pixels
-        int cellWidth = 8;
-        int cellHeight = 16;
-        int pixelWidth = area.width() * cellWidth;
-        int pixelHeight = area.height() * cellHeight;
-
-        // Scale image to fit
-        ImageData scaled = image.resize(pixelWidth, pixelHeight);
-
         // Move cursor to position
         String cursorMove = String.format("\033[%d;%dH", area.y() + 1, area.x() + 1);
         rawOutput.write(cursorMove.getBytes(StandardCharsets.US_ASCII));
 
         // Encode image as PNG and then base64
-        byte[] pngData = scaled.toPng();
+        // The image should already be scaled by Image.scaleImage() based on the scaling mode
+        byte[] pngData = image.toPng();
         String base64Data = Base64.getEncoder().encodeToString(pngData);
 
         // Send image using chunked transmission
