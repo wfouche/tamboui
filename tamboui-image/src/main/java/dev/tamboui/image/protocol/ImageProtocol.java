@@ -6,6 +6,7 @@ package dev.tamboui.image.protocol;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.image.ImageData;
+import dev.tamboui.image.capability.TerminalImageProtocol;
 import dev.tamboui.layout.Rect;
 
 import java.io.IOException;
@@ -63,6 +64,13 @@ public interface ImageProtocol {
      * @return the protocol name
      */
     String name();
+
+    /**
+     * Returns the terminal image protocol type for capability checking.
+     *
+     * @return the protocol type
+     */
+    TerminalImageProtocol protocolType();
 
     /**
      * Resolution multiplier for a rendering protocol.

@@ -8,6 +8,7 @@ import dev.tamboui.buffer.Buffer;
 import dev.tamboui.image.capability.TerminalImageCapabilities;
 import dev.tamboui.image.protocol.ImageProtocol;
 import dev.tamboui.layout.Rect;
+import dev.tamboui.widget.RawOutputCapable;
 import dev.tamboui.widget.Widget;
 import dev.tamboui.widgets.block.Block;
 
@@ -36,7 +37,7 @@ import java.nio.file.Path;
  * @see ImageScaling
  * @see dev.tamboui.image.capability.TerminalImageCapabilities
  */
-public final class Image implements Widget {
+public final class Image implements Widget, RawOutputCapable {
 
     private final ImageData data;
     private final ImageScaling scaling;
@@ -108,6 +109,7 @@ public final class Image implements Widget {
      * @param buffer    the buffer for character-based rendering
      * @param rawOutput the output stream for native protocols (may be null)
      */
+    @Override
     public void render(Rect area, Buffer buffer, OutputStream rawOutput) {
         if (area.isEmpty() || data == null) {
             return;

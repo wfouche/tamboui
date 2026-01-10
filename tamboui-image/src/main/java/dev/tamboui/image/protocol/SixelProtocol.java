@@ -6,6 +6,7 @@ package dev.tamboui.image.protocol;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.image.ImageData;
+import dev.tamboui.image.capability.TerminalImageProtocol;
 import dev.tamboui.layout.Rect;
 
 import java.io.ByteArrayOutputStream;
@@ -70,22 +71,13 @@ public final class SixelProtocol implements ImageProtocol {
             return;
         }
 
-        // Calculate pixel dimensions based on area
-        // Assume typical cell size of 8x16 pixels (can be queried but this is a reasonable default)
-        int cellWidth = 8;
-        int cellHeight = 16;
-        int pixelWidth = area.width() * cellWidth;
-        int pixelHeight = area.height() * cellHeight;
-
-        // Scale image to fit
-        ImageData scaled = image.resize(pixelWidth, pixelHeight);
-
         // Move cursor to position
         String cursorMove = String.format("\033[%d;%dH", area.y() + 1, area.x() + 1);
         rawOutput.write(cursorMove.getBytes(StandardCharsets.US_ASCII));
 
         // Generate and write Sixel data
-        byte[] sixelData = encodeSixel(scaled);
+        // The image should already be scaled by Image.scaleImage() based on the scaling mode
+        byte[] sixelData = encodeSixel(image);
         rawOutput.write(sixelData);
         rawOutput.flush();
     }
@@ -104,6 +96,11 @@ public final class SixelProtocol implements ImageProtocol {
     @Override
     public String name() {
         return "Sixel";
+    }
+
+    @Override
+    public TerminalImageProtocol protocolType() {
+        return TerminalImageProtocol.SIXEL;
     }
 
     /**

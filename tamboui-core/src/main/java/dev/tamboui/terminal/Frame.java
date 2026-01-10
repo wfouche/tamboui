@@ -7,9 +7,11 @@ package dev.tamboui.terminal;
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Position;
 import dev.tamboui.layout.Rect;
+import dev.tamboui.widget.RawOutputCapable;
 import dev.tamboui.widget.StatefulWidget;
 import dev.tamboui.widget.Widget;
 
+import java.io.OutputStream;
 import java.util.Optional;
 
 /**
@@ -20,12 +22,14 @@ public final class Frame {
 
     private final Buffer buffer;
     private final Rect area;
+    private final OutputStream rawOutput;
     private Position cursorPosition;
     private boolean cursorVisible;
 
-    Frame(Buffer buffer) {
+    Frame(Buffer buffer, OutputStream rawOutput) {
         this.buffer = buffer;
         this.area = buffer.area();
+        this.rawOutput = rawOutput;
         this.cursorPosition = null;
         this.cursorVisible = false;
     }
@@ -38,7 +42,7 @@ public final class Frame {
      * @return a new frame backed by the given buffer
      */
     public static Frame forTesting(Buffer buffer) {
-        return new Frame(buffer);
+        return new Frame(buffer, null);
     }
 
     /**
@@ -79,12 +83,19 @@ public final class Frame {
 
     /**
      * Renders a widget to the given area.
+     * <p>
+     * If the widget implements {@link RawOutputCapable}, the raw output stream
+     * will be passed to enable native terminal protocol rendering.
      *
      * @param widget the widget to render
      * @param area the area to render within
      */
     public void renderWidget(Widget widget, Rect area) {
-        widget.render(area, buffer);
+        if (widget instanceof RawOutputCapable) {
+            ((RawOutputCapable) widget).render(area, buffer, rawOutput);
+        } else {
+            widget.render(area, buffer);
+        }
     }
 
     /**
@@ -136,5 +147,16 @@ public final class Frame {
      */
     boolean isCursorVisible() {
         return cursorVisible;
+    }
+
+    /**
+     * Returns the raw output stream for native protocol rendering.
+     * <p>
+     * Package-private: use {@link FrameInternal#rawOutput(Frame)} to access.
+     *
+     * @return the raw output stream, or null if not available
+     */
+    OutputStream rawOutput() {
+        return rawOutput;
     }
 }
