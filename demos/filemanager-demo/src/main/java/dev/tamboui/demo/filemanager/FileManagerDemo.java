@@ -55,7 +55,7 @@ public class FileManagerDemo {
     public static void main(String[] args) throws Exception {
         // Determine starting directories
         var home = Path.of(System.getProperty("user.home"));
-        var leftStart = args.length > 0 ? Path.of(args[0]) : home;
+        var leftStart = args.length > 0 ? Path.of(args[0]) : Path.of(".");
         var rightStart = args.length > 1 ? Path.of(args[1]) : home;
 
         // Create the model
