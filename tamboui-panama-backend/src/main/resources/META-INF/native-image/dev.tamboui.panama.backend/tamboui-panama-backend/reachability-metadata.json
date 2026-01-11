@@ -17,7 +17,9 @@
       { "returnType": "int", "parameterTypes": ["void*", "void*", "int", "void*", "void*"] },
       { "returnType": "int", "parameterTypes": ["void*", "void*", "int", "void*"] },
       { "returnType": "int", "parameterTypes": [] },
-      { "returnType": "void*", "parameterTypes": ["int"] }
+      { "returnType": "void*", "parameterTypes": ["int"] },
+      { "returnType": "int", "parameterTypes": ["int", "void*", "void*"] },
+      { "returnType": "int", "parameterTypes": ["long", "long", "int", "long", "long"] }
     ],
     "upcalls": [
       { "returnType": "void", "parameterTypes": ["int"] }
