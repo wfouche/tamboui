@@ -1,3 +1,5 @@
+import dev.tamboui.build.GenerateDemosGalleryTask
+
 plugins {
     id("org.asciidoctor.jvm.convert")
 }
@@ -6,15 +8,69 @@ repositories {
     mavenCentral()
 }
 
+// Configuration to resolve demo cast files from demo projects
+val demoCasts = configurations.create("demoCasts") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named("demo-cast"))
+    }
+}
+
+// Configuration to resolve demo metadata files from demo projects
+val demoMetadata = configurations.create("demoMetadata") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named("demo-metadata"))
+    }
+}
+
+val copyCasts = tasks.register<Sync>("copyCasts") {
+    from(demoCasts)
+    destinationDir = layout.buildDirectory.dir("generated/docs/demos").get().asFile
+}
+
+// Task to generate the demos gallery AsciiDoc pages (index + per-module)
+val generateDemosPage = tasks.register<GenerateDemosGalleryTask>("generateDemosPage") {
+    metadataFiles.from(demoMetadata)
+    title = "Demo Gallery"
+    castBasePath = "demos"
+    outputDirectory = layout.buildDirectory.dir("generated/asciidoc")
+}
+
+rootProject.allprojects {
+    pluginManager.withPlugin("dev.tamboui.demo-project") {
+        dependencies {
+            demoCasts.dependencies.add(project(project.path))
+            demoMetadata.dependencies.add(project(project.path))
+        }
+    }
+}
+
+// Prepare combined asciidoc sources (static + generated)
+val prepareAsciidocSources = tasks.register<Sync>("prepareAsciidocSources") {
+    dependsOn(generateDemosPage)
+    from("src/docs/asciidoc")
+    from(layout.buildDirectory.dir("generated/asciidoc"))
+    into(layout.buildDirectory.dir("asciidoc-sources"))
+}
+
 tasks.asciidoctor {
-    setSourceDir(file("src/docs/asciidoc"))
-    setBaseDir(file("src/docs/asciidoc"))
+    dependsOn(prepareAsciidocSources, copyCasts)
+
+    setSourceDir(layout.buildDirectory.dir("asciidoc-sources").get().asFile)
+    setBaseDir(layout.buildDirectory.dir("asciidoc-sources").get().asFile)
     setOutputDir(layout.buildDirectory.dir("docs"))
 
     // Copy theme resources
     resources {
         from("src/theme") {
             into("_static")
+        }
+        // Copy demo cast files from resolved configuration
+        from(copyCasts) {
+            into("demos")
         }
     }
 

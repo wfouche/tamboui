@@ -131,6 +131,16 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+#header h1 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#header h1 a:hover {
+    text-decoration: none;
 }
 
 #header h1::before {
@@ -143,9 +153,138 @@ body {
 }
 
 #header .details {
-    margin-left: auto;
+    display: none; /* Hide version details to make room for nav */
+}
+
+/* ===== Top Navigation Bar ===== */
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    position: absolute;
+    left: var(--sl-sidebar-width);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.top-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.top-nav a {
+    padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
-    color: var(--sl-color-gray-4);
+    font-weight: 500;
+    color: var(--sl-color-gray-5);
+    text-decoration: none;
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    transition: all var(--sl-transition-fast);
+}
+
+.top-nav a:hover {
+    color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+    text-decoration: none;
+}
+
+.top-nav a.current {
+    color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+}
+
+/* Mobile: hamburger menu for top nav */
+@media (max-width: 72rem) {
+    .top-nav {
+        display: none;
+    }
+
+    .mobile-nav-toggle {
+        display: flex;
+    }
+
+    .mobile-nav {
+        display: block;
+    }
+}
+
+@media (min-width: 72.01rem) {
+    .mobile-nav-toggle {
+        display: none;
+    }
+
+    .mobile-nav {
+        display: none;
+    }
+}
+
+/* Mobile navigation drawer */
+.mobile-nav-toggle {
+    background: transparent;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin-left: auto;
+    margin-right: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    color: var(--sl-color-text);
+    transition: all var(--sl-transition-fast);
+}
+
+.mobile-nav-toggle:hover {
+    background: var(--sl-color-accent-low);
+    border-color: var(--sl-color-accent);
+}
+
+.mobile-nav-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
+.mobile-nav {
+    position: fixed;
+    top: var(--sl-nav-height);
+    left: 0;
+    right: 0;
+    background: var(--sl-color-bg-nav);
+    border-bottom: 1px solid var(--sl-color-hairline);
+    padding: 1rem;
+    z-index: 99;
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.mobile-nav.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mobile-nav a {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-5);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    border-left: 3px solid transparent;
+    transition: all var(--sl-transition-fast);
+}
+
+.mobile-nav a:hover {
+    color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+}
+
+.mobile-nav a.current {
+    color: var(--sl-color-text-accent);
+    background: var(--sl-color-accent-low);
+    border-left-color: var(--sl-color-accent);
 }
 
 /* ===== Layout ===== */
@@ -787,4 +926,34 @@ body.toc2.toc-left .prev-next-nav {
     .prev-next-nav .next {
         align-items: flex-start;
     }
+}
+
+/* ===== Asciinema Player ===== */
+.asciinema-player-container {
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--sl-color-hairline);
+    background: #1e1e2e;
+}
+
+.asciinema-player-container .ap-title {
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-4);
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--sl-color-gray-2);
+    border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+/* Ensure the player fills its container */
+.asciinema-player-container .ap-player {
+    width: 100%;
+}
+
+/* Style the player controls */
+.asciinema-player-container .ap-control-bar {
+    background: rgba(30, 30, 46, 0.9);
+    border-top: 1px solid var(--sl-color-hairline);
 }

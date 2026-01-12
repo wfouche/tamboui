@@ -1,4 +1,6 @@
 import dev.tamboui.build.DemoExtension
+import dev.tamboui.build.GenerateDemoMetadataTask
+import dev.tamboui.build.RecordDemoTask
 import gradle.kotlin.dsl.accessors._d7c1cb8291fcf7e869bfba85a0dc6ae2.java
 
 plugins {
@@ -57,18 +59,38 @@ graalvmNative {
     toolchainDetection.set(false)
 }
 
+// Configuration for cast files
+val casts by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named("demo-cast"))
+    }
+}
+
+// Configuration for metadata files
+val demoMetadata by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named("demo-metadata"))
+    }
+}
+
+// Create demo extension first so tasks can reference it
 val demoExtension = extensions.create("demo", DemoExtension::class)
 demoExtension.displayName.convention(provider {
     // Convert "barchart-demo" to "Barchart" (remove -demo suffix, capitalize)
     val baseName = project.name.removeSuffix("-demo")
     baseName.split("-").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
 })
+
 demoExtension.description.convention(provider { project.description ?: "" })
 demoExtension.module.convention(provider {
     // Extract module from path: :tamboui-widgets:demos:foo -> "Widgets"
     val path = project.path
     if (path.startsWith(":demos:")) {
-        "Other"
+        "Core"
     } else {
         val parts = path.split(":")
         if (parts.size >= 2) {
@@ -79,7 +101,61 @@ demoExtension.module.convention(provider {
                 moduleName.replaceFirstChar { it.uppercase() }
             }
         } else {
-            "Unknown"
+            "Other"
         }
     }
 })
+demoExtension.tags.convention(emptySet())
+demoExtension.internal.convention(false)
+
+val tape = rootProject.layout.projectDirectory.file("docs/video/${project.name}.tape")
+
+// Task to record the demo to cast file
+val recordDemo = tasks.register<RecordDemoTask>("recordDemo") {
+    val outputDir = layout.buildDirectory.dir("generated/casts")
+
+    mainClass = application.mainClass
+    classpath.from(sourceSets["main"].runtimeClasspath)
+    outputDirectory = outputDir
+
+    fps = 10
+    duration = 5000
+    width = 120
+    height = 40
+
+    // Look for VHS tape file in docs/video/
+    val tapeFile = tape.asFile
+    if (tapeFile.exists()) {
+        configFile.set(tapeFile)
+    }
+}
+
+// Task to generate metadata file
+val generateDemoMetadata = tasks.register<GenerateDemoMetadataTask>("generateDemoMetadata") {
+    demoId = project.name
+    displayName = demoExtension.displayName
+    demoDescription = demoExtension.description
+    module = demoExtension.module
+    tags = demoExtension.tags
+    internal = demoExtension.internal
+    castFileName = provider { "${project.name}.cast" }
+    outputFile = layout.buildDirectory.file("generated/metadata/${project.name}.json")
+}
+
+// Register artifacts
+casts.outgoing.artifact(recordDemo)
+demoMetadata.outgoing.artifact(generateDemoMetadata)
+
+val validateDemo = tasks.register("validateDemo") {
+    doLast {
+        if (!demoExtension.internal.get()) {
+            if (!tape.asFile.exists()) {
+                throw GradleException("Demo tape file is missing: ${tape.asFile.absolutePath}")
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(validateDemo)
+}

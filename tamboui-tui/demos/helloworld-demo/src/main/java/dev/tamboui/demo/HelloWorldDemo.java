@@ -13,7 +13,7 @@ import dev.tamboui.text.Text;
 /**
  * Minimal Hello World demo using immediate mode rendering.
  */
-public class HelloWorld {
+public class HelloWorldDemo {
     public static void main(String[] args) throws Exception {
         try (Backend backend = BackendFactory.create()) {
             backend.enableRawMode();
@@ -25,13 +25,13 @@ public class HelloWorld {
             // Redraw on terminal resize
             backend.onResize(() -> {
                 try {
-                    terminal.draw(HelloWorld::render);
+                    terminal.draw(HelloWorldDemo::render);
                 } catch (Exception ignored) {
                 }
             });
 
             // Initial draw
-            terminal.draw(HelloWorld::render);
+            terminal.draw(HelloWorldDemo::render);
 
             boolean running = true;
             while (running) {

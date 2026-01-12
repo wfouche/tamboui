@@ -22,6 +22,7 @@ import dev.tamboui.image.protocol.ImageProtocol;
 import dev.tamboui.image.protocol.ITermProtocol;
 import dev.tamboui.image.protocol.KittyProtocol;
 import dev.tamboui.image.protocol.SixelProtocol;
+import dev.tamboui.internal.record.RecordingBackend;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Layout;
 import dev.tamboui.layout.Rect;
@@ -43,6 +44,7 @@ import dev.tamboui.widgets.paragraph.Paragraph;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 /**
  * Demo TUI application showcasing image rendering capabilities.
@@ -81,7 +83,16 @@ public class ImageDemo {
     }
 
     public ImageDemo(String customImagePath) throws IOException {
-        this.capabilities = TerminalImageCapabilities.detect();
+        try (var backend = BackendFactory.create()) {
+            if (backend instanceof RecordingBackend) {
+                this.capabilities = TerminalImageCapabilities.withSupport(EnumSet.of(
+                        TerminalImageProtocol.HALF_BLOCK,
+                        TerminalImageProtocol.BRAILLE
+                ));
+            } else {
+                this.capabilities = TerminalImageCapabilities.detect();
+            }
+        }
         this.currentProtocol = capabilities.bestProtocol();
 
         // Load image from path or bundled resource

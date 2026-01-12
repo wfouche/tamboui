@@ -308,6 +308,16 @@ public final class Buffer {
     }
 
     /**
+     * Creates a deep copy of this buffer.
+     *
+     * @return a new buffer with the same content
+     */
+    public Buffer copy() {
+        Cell[] contentCopy = Arrays.copyOf(content, content.length);
+        return new Buffer(area, contentCopy);
+    }
+
+    /**
      * Calculates the differences between this buffer and another.
      * Returns a list of cell updates needed to transform this buffer into the other.
      *
@@ -360,6 +370,39 @@ public final class Buffer {
             if (y > area.top()) {
                 result.append("\n");
             }
+
+            for (int x = area.left(); x < area.right(); x++) {
+                Cell cell = get(x, y);
+
+                // Apply style if changed
+                if (!cell.style().equals(lastStyle)) {
+                    result.append(AnsiStringBuilder.styleToAnsi(cell.style()));
+                    lastStyle = cell.style();
+                }
+
+                result.append(cell.symbol());
+            }
+        }
+
+        // Reset at end
+        result.append(AnsiStringBuilder.RESET);
+        return result.toString();
+    }
+
+    /**
+     * Renders the buffer content as an ANSI-escaped string using explicit cursor positioning.
+     * Each row is preceded by a cursor position escape sequence (CSI row;1H) to ensure
+     * correct rendering in terminal recording players like asciinema.
+     *
+     * @return an ANSI string representation of the buffer with cursor positioning
+     */
+    public String toAnsiStringWithCursorPositioning() {
+        StringBuilder result = new StringBuilder();
+        Style lastStyle = null;
+
+        for (int y = area.top(); y < area.bottom(); y++) {
+            // Position cursor at start of row (1-based coordinates)
+            result.append("\u001b[").append(y - area.top() + 1).append(";1H");
 
             for (int x = area.left(); x < area.right(); x++) {
                 Cell cell = get(x, y);
