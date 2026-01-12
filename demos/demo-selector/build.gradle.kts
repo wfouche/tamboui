@@ -6,6 +6,7 @@ description = "Interactive demo selector"
 
 demo {
     displayName = "Demo Selector"
+    internal = true
 }
 
 dependencies {

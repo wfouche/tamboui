@@ -5,10 +5,11 @@ var TAMBOUI_PAGES = [
     { href: 'getting-started.html', title: 'Getting Started', short: 'Getting Started' },
     { href: 'core-concepts.html', title: 'Core Concepts', short: 'Core Concepts' },
     { href: 'widgets.html', title: 'Widgets Reference', short: 'Widgets' },
+    { href: 'demos.html', title: 'Demo Gallery', short: 'Demos' },
     { href: 'api-levels.html', title: 'API Levels', short: 'API Levels' },
     { href: 'styling.html', title: 'CSS Styling', short: 'CSS Styling' },
     { href: 'bindings.html', title: 'Bindings and Actions', short: 'Bindings' },
-    { href: 'mvc-architecture.html', title: 'Application Structure', short: 'App Structure' },
+    { href: 'mvc-architecture.html', title: 'MVC Model', short: 'MVC Model' },
     { href: 'developer-guide.html', title: 'Developer Guide', short: 'Developer Guide' }
 ];
 </script>
@@ -77,36 +78,85 @@ var TAMBOUI_PAGES = [
     }
 
     function createTopNavigation() {
-        var toc = document.getElementById('toc');
-        if (!toc) return;
+        var header = document.getElementById('header');
+        if (!header) return;
 
         var currentPage = getCurrentPage();
 
-        // Create navigation section
+        // Create top navigation bar
         var nav = document.createElement('nav');
-        nav.className = 'page-nav';
-        nav.innerHTML = '<div class="page-nav-title">Documentation</div>';
-
-        var ul = document.createElement('ul');
-        ul.className = 'page-nav-list';
+        nav.className = 'top-nav';
 
         TAMBOUI_PAGES.forEach(function(page) {
-            var li = document.createElement('li');
             var a = document.createElement('a');
             a.href = page.href;
             a.textContent = page.short;
             if (page.href === currentPage) {
                 a.className = 'current';
-                li.className = 'current';
             }
-            li.appendChild(a);
-            ul.appendChild(li);
+            nav.appendChild(a);
         });
 
-        nav.appendChild(ul);
+        // Insert before theme toggle
+        var themeToggle = header.querySelector('.theme-toggle');
+        if (themeToggle) {
+            header.insertBefore(nav, themeToggle);
+        } else {
+            header.appendChild(nav);
+        }
 
-        // Insert at top of TOC
-        toc.insertBefore(nav, toc.firstChild);
+        // Create mobile navigation
+        createMobileNavigation(header, currentPage);
+    }
+
+    function createMobileNavigation(header, currentPage) {
+        // Create hamburger button
+        var toggle = document.createElement('button');
+        toggle.className = 'mobile-nav-toggle';
+        toggle.setAttribute('aria-label', 'Toggle navigation menu');
+        toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
+
+        // Insert before theme toggle or at end of header
+        var themeToggle = header.querySelector('.theme-toggle');
+        if (themeToggle) {
+            header.insertBefore(toggle, themeToggle);
+        } else {
+            header.appendChild(toggle);
+        }
+
+        // Create mobile nav drawer
+        var mobileNav = document.createElement('nav');
+        mobileNav.className = 'mobile-nav';
+
+        TAMBOUI_PAGES.forEach(function(page) {
+            var a = document.createElement('a');
+            a.href = page.href;
+            a.textContent = page.title;
+            if (page.href === currentPage) {
+                a.className = 'current';
+            }
+            mobileNav.appendChild(a);
+        });
+
+        document.body.appendChild(mobileNav);
+
+        // Toggle mobile nav
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileNav.classList.toggle('open');
+            var isOpen = mobileNav.classList.contains('open');
+            toggle.innerHTML = isOpen
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!mobileNav.contains(e.target) && !toggle.contains(e.target)) {
+                mobileNav.classList.remove('open');
+                toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
+            }
+        });
     }
 
     function createPrevNextNavigation() {

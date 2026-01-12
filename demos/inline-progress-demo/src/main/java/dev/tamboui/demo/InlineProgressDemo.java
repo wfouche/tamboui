@@ -23,7 +23,6 @@ import dev.tamboui.widgets.gauge.Gauge;
 import dev.tamboui.widgets.paragraph.Paragraph;
 
 import java.util.Arrays;
-import java.util.Scanner;
 
 /**
  * Demonstrates the InlineDisplay class for NPM/Gradle-style progress UX.
@@ -41,15 +40,14 @@ public class InlineProgressDemo {
     private static final String[] SPINNER = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"};
 
     public static void main(String[] args) throws Exception {
-        var scanner = new Scanner(System.in);
         boolean restart;
         do {
-            runDemo(scanner);
+            runDemo();
             restart = promptRestart();
         } while (restart);
     }
 
-    private static void runDemo(Scanner scanner) throws Exception {
+    private static void runDemo() throws Exception {
         System.out.println("=== Inline Progress Demo ===\n");
 
         // Part 1: Simple toAnsiString() usage
@@ -63,7 +61,7 @@ public class InlineProgressDemo {
         System.out.println();
 
         // Prompt user to continue
-        if (!promptContinue(scanner)) {
+        if (!promptContinue()) {
             System.out.println("Demo cancelled.");
             return;
         }
@@ -327,7 +325,7 @@ public class InlineProgressDemo {
         System.out.println("Run 'npm start' to begin.");
     }
 
-    private static boolean promptContinue(Scanner scanner) {
+    private static boolean promptContinue() throws Exception {
         var buf = Buffer.empty(Rect.of(60, 1));
         Paragraph.builder()
             .text(Text.from(Line.from(
@@ -339,8 +337,14 @@ public class InlineProgressDemo {
         System.out.print(buf.toAnsiStringTrimmed());
         System.out.flush();
 
-        var input = scanner.nextLine().trim().toLowerCase();
-        return input.isEmpty() || input.startsWith("y");
+        try (Backend backend = BackendFactory.create()) {
+            backend.enableRawMode();
+            int key = backend.read(0);
+            backend.disableRawMode();
+            System.out.println();
+            // Y, y, Enter, or -2 (recording timeout) means yes; n or N means no
+            return key == 'y' || key == 'Y' || key == '\r' || key == '\n' || key == -2;
+        }
     }
 
     private static boolean promptRestart() throws Exception {

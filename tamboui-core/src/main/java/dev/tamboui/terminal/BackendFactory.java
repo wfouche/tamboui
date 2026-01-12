@@ -4,11 +4,12 @@
  */
 package dev.tamboui.terminal;
 
+import dev.tamboui.internal.record.RecordingBackend;
+import dev.tamboui.internal.record.RecordingConfig;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -100,7 +101,15 @@ public final class BackendFactory {
             );
         }
 
-        return providers.get(0).create();
+        Backend backend = providers.get(0).create();
+
+        // Check if recording is enabled and wrap the backend
+        RecordingConfig recordingConfig = RecordingConfig.load();
+        if (recordingConfig != null) {
+            backend = new RecordingBackend(backend, recordingConfig);
+        }
+
+        return backend;
     }
 
     /**

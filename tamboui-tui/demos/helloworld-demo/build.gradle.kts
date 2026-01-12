@@ -13,6 +13,6 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.tamboui.demo.HelloWorldDemo")
+    mainClass = "dev.tamboui.demo.HelloWorldDemo"
 }
 
