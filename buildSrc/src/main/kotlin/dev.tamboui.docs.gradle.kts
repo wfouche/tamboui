@@ -2,6 +2,7 @@ import dev.tamboui.build.GenerateDemosGalleryTask
 
 plugins {
     id("org.asciidoctor.jvm.convert")
+    id("org.ajoberstar.git-publish")
 }
 
 repositories {
@@ -98,4 +99,31 @@ tasks.asciidoctor {
             "github-repo" to "tamboui/tamboui"
         )
     )
+}
+
+// Git publish configuration for publishing documentation to tamboui.dev
+// For SNAPSHOT versions (main branch): publish to docs/main
+// For release versions (tags): publish to docs/<version>
+val targetFolder = providers.provider {
+    val version = project.version.toString()
+    if (version.endsWith("-SNAPSHOT")) "docs/main" else "docs/$version"
+}
+
+gitPublish {
+    repoUri.set("git@github.com:tamboui/tamboui.dev.git")
+    branch.set("gh-pages")
+    sign.set(false)
+
+    contents {
+        from(tasks.asciidoctor) {
+            into(targetFolder)
+        }
+    }
+
+    preserve {
+        include("**")
+        exclude(targetFolder.map { "$it/**" }.get())
+    }
+
+    commitMessage.set(targetFolder.map { "Publishing documentation to $it" })
 }
