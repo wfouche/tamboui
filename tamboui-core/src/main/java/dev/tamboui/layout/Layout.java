@@ -242,7 +242,6 @@ public final class Layout {
 
         switch (flex) {
             case START:
-            case LEGACY:
                 // All elements packed at start, remaining space at end
                 gaps[count] = remainingSpace;
                 break;
@@ -298,6 +297,18 @@ public final class Layout {
 
                     // End gap (half size, remaining leftover)
                     gaps[count] = unitSize + leftover;
+                }
+                break;
+
+            case SPACE_EVENLY:
+                // Equal space everywhere: at edges and between all elements
+                if (count > 0) {
+                    int numGaps = count + 1;
+                    int gapSize = remainingSpace / numGaps;
+                    int leftover = remainingSpace % numGaps;
+                    for (int i = 0; i <= count; i++) {
+                        gaps[i] = gapSize + (i < leftover ? 1 : 0);
+                    }
                 }
                 break;
         }

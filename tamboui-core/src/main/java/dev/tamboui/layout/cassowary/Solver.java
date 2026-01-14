@@ -4,7 +4,7 @@
  */
 package dev.tamboui.layout.cassowary;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -84,11 +84,11 @@ public final class Solver {
      * Creates a new empty solver.
      */
     public Solver() {
-        this.constraints = new HashMap<>();
-        this.vars = new HashMap<>();
-        this.rows = new HashMap<>();
-        this.values = new HashMap<>();
-        this.edits = new HashMap<>();
+        this.constraints = new LinkedHashMap<>();
+        this.vars = new LinkedHashMap<>();
+        this.rows = new LinkedHashMap<>();
+        this.values = new LinkedHashMap<>();
+        this.edits = new LinkedHashMap<>();
         this.objective = new Row();
         this.artificial = null;
     }

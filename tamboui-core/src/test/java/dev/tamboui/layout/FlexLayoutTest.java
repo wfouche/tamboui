@@ -166,24 +166,6 @@ class FlexLayoutTest {
     }
 
     @Test
-    @DisplayName("Flex.LEGACY behaves like START")
-    void flexLegacy() {
-        Rect area = new Rect(0, 0, 100, 50);
-        Layout layout = Layout.horizontal()
-                .constraints(
-                        Constraint.length(20),
-                        Constraint.length(20)
-                )
-                .flex(Flex.LEGACY);
-
-        List<Rect> rects = layout.split(area);
-
-        // Same as START
-        assertThat(rects.get(0).x()).isEqualTo(0);
-        assertThat(rects.get(1).x()).isEqualTo(20);
-    }
-
-    @Test
     @DisplayName("Flex with single element behaves correctly")
     void flexSingleElement() {
         Rect area = new Rect(0, 0, 100, 50);

@@ -4,7 +4,7 @@
  */
 package dev.tamboui.layout.cassowary;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ final class Row {
      */
     Row() {
         this.constant = 0.0;
-        this.cells = new HashMap<>();
+        this.cells = new LinkedHashMap<>();
     }
 
     /**
@@ -37,7 +37,7 @@ final class Row {
      */
     Row(double constant) {
         this.constant = constant;
-        this.cells = new HashMap<>();
+        this.cells = new LinkedHashMap<>();
     }
 
     /**
@@ -47,7 +47,7 @@ final class Row {
      */
     Row(Row other) {
         this.constant = other.constant;
-        this.cells = new HashMap<>(other.cells);
+        this.cells = new LinkedHashMap<>(other.cells);
     }
 
     /**

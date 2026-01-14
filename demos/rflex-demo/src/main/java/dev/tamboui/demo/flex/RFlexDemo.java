@@ -170,8 +170,7 @@ public final class RFlexDemo {
         new ExampleData("", new Constraint[] { Constraint.max(20) }, null),
         new ExampleData("", new Constraint[] { Constraint.min(20), Constraint.max(20), Constraint.length(20), Constraint.length(20) }, null),
 
-        // Ratatui supports Fill(0). TamboUI's Constraint.fill requires >= 1, so we keep the label but map it.
-        new ExampleData("", new Constraint[] { Constraint.fill(1), Constraint.fill(1) }, new String[] { "Fill(0)", "Fill(0)" }),
+        new ExampleData("", new Constraint[] { Constraint.fill(0), Constraint.fill(0) }, null),
         new ExampleData(
             "`Fill(1)` can be to scale with respect to other `Fill(2)`",
             new Constraint[] { Constraint.fill(1), Constraint.fill(2) },
@@ -180,18 +179,17 @@ public final class RFlexDemo {
         new ExampleData("", new Constraint[] { Constraint.fill(1), Constraint.min(10), Constraint.max(10), Constraint.fill(2) }, null),
         new ExampleData(
             "`Fill(0)` collapses if there are other non-zero `Fill(_)`\nconstraints. e.g. `[Fill(0), Fill(0), Fill(1)]`:",
-            new Constraint[] { Constraint.fill(1), Constraint.fill(1), Constraint.fill(1) },
-            new String[] { "Fill(0)", "Fill(0)", "Fill(1)" }
+            new Constraint[] { Constraint.fill(0), Constraint.fill(0), Constraint.fill(1) },
+            null
         )
     };
 
     private enum SelectedTab {
-        LEGACY("Legacy", 0xfb923c, Flex.LEGACY),
         START("Start", 0x38bdf8, Flex.START),
         CENTER("Center", 0x7dd3fc, Flex.CENTER),
         END("End", 0xbae6fd, Flex.END),
         SPACE_AROUND("SpaceAround", 0x6366f1, Flex.SPACE_AROUND),
-        SPACE_EVENLY("SpaceEvenly", 0x818cf8, Flex.SPACE_AROUND),
+        SPACE_EVENLY("SpaceEvenly", 0x818cf8, Flex.SPACE_EVENLY),
         SPACE_BETWEEN("SpaceBetween", 0xa5b4fc, Flex.SPACE_BETWEEN);
 
         final String label;
@@ -214,7 +212,7 @@ public final class RFlexDemo {
         }
     }
 
-    private SelectedTab selectedTab = SelectedTab.LEGACY;
+    private SelectedTab selectedTab = SelectedTab.START;
     private int scrollOffset = 0;
     private int spacing = 0;
 
@@ -331,7 +329,6 @@ public final class RFlexDemo {
             .highlightStyle(Style.EMPTY.reversed())
             .block(
                 Block.builder()
-                    .borders(Borders.ALL)
                     .title(
                         Title.from(
                                 Line.from(
@@ -431,8 +428,9 @@ public final class RFlexDemo {
 
     private void renderExample(Rect area, Buffer buf, ExampleData ex, Flex flex, int spacing) {
         int titleHeight = descriptionHeight(ex.description);
+        // Use Fill(0) to match ratatui exactly
         List<Rect> layout = Layout.vertical()
-            .constraints(Constraint.length(titleHeight), Constraint.fill())
+            .constraints(Constraint.length(titleHeight), Constraint.fill(0))
             .split(area);
 
         Rect title = layout.get(0);
@@ -498,16 +496,24 @@ public final class RFlexDemo {
         String title = displayOverride != null ? displayOverride : constraintLabel(constraint);
         String content = width + " px";
 
+        Style blockStyle = Style.EMPTY.fg(TW_WHITE).bg(main);
+        Style borderStyle = Style.EMPTY.fg(main).reversed();
+
         Block block = Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.QUADRANT_OUTSIDE)
-            .borderColor(main)
-            .style(Style.EMPTY.fg(TW_WHITE).bg(main))
+            .borderStyle(borderStyle)
+            .style(blockStyle)
             .build();
         block.render(area, buf);
 
+        // Style the text with the same fg/bg as the block so it renders properly
+        // (Buffer.setString replaces cells, so the text must carry its own style)
         Paragraph para = Paragraph.builder()
-            .text(Text.from(Line.from(title), Line.from(content)))
+            .text(Text.from(
+                Line.from(Span.styled(title, blockStyle)),
+                Line.from(Span.styled(content, blockStyle))
+            ))
             .alignment(Alignment.CENTER)
             .build();
         para.render(block.inner(area), buf);

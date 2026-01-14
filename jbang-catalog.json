@@ -19,6 +19,9 @@
     "modular-demo": {
       "script-ref": "demos/modular-demo/src/main/java/dev/tamboui/demo/modular/ModularDemo.java"
     },
+    "rflex-demo": {
+      "script-ref": "demos/rflex-demo/src/main/java/dev/tamboui/demo/flex/RFlexDemo.java"
+    },
     "css-demo": {
       "script-ref": "tamboui-css/demos/css-demo/src/main/java/dev/tamboui/demo/CssDemo.java"
     },

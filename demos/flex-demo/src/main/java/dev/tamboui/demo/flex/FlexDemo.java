@@ -32,7 +32,7 @@ public class FlexDemo {
 
     private static final Flex[] FLEX_MODES = {
             Flex.START, Flex.CENTER, Flex.END,
-            Flex.SPACE_BETWEEN, Flex.SPACE_AROUND
+            Flex.SPACE_BETWEEN, Flex.SPACE_AROUND, Flex.SPACE_EVENLY
     };
 
     private static final String[] EXAMPLE_NAMES = {
