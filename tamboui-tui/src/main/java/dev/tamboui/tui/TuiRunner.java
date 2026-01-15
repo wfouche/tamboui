@@ -10,11 +10,11 @@ import dev.tamboui.terminal.BackendFactory;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.terminal.Terminal;
 import dev.tamboui.tui.bindings.ActionHandler;
+import dev.tamboui.tui.bindings.Actions;
 import dev.tamboui.tui.bindings.Bindings;
 import dev.tamboui.tui.bindings.BindingSets;
 import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.EventParser;
-import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.TickEvent;
 import dev.tamboui.tui.overlay.FpsOverlay;
@@ -211,14 +211,11 @@ public final class TuiRunner implements AutoCloseable {
             Event event = pollEvent(effectivePollTimeout);
 
             if (event != null) {
-                // Handle FPS overlay toggle: CTRL+SHIFT+F12
-                if (event instanceof KeyEvent) {
-                    KeyEvent keyEvent = (KeyEvent) event;
-                    if (keyEvent.code() == KeyCode.F12 && keyEvent.hasCtrl() && keyEvent.hasShift()) {
-                        fpsOverlay.toggle();
-                        terminal.draw(wrappedRenderer::render);
-                        continue;
-                    }
+                // Handle FPS overlay toggle
+                if (config.bindings().matches(event, Actions.TOGGLE_FPS_OVERLAY)) {
+                    fpsOverlay.toggle();
+                    terminal.draw(wrappedRenderer::render);
+                    continue;
                 }
 
                 boolean shouldRedraw = handler.handle(event, this);

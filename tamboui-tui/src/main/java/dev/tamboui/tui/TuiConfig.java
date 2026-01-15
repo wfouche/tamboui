@@ -175,8 +175,6 @@ public final class TuiConfig {
 
     /**
      * Returns whether the FPS overlay is enabled.
-     * <p>
-     * When enabled, press F12 to toggle overlay visibility.
      *
      * @return true if FPS overlay is enabled
      */
@@ -382,8 +380,6 @@ public final class TuiConfig {
 
         /**
          * Enables or disables the FPS overlay.
-         * <p>
-         * When enabled, press F12 to toggle overlay visibility.
          *
          * @param enabled true to enable the FPS overlay
          * @return this builder
