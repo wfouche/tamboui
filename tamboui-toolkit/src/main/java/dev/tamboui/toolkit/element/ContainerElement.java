@@ -4,6 +4,7 @@
  */
 package dev.tamboui.toolkit.element;
 
+import dev.tamboui.layout.Rect;
 import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
@@ -92,6 +93,9 @@ public abstract class ContainerElement<T extends ContainerElement<T>> extends St
 
     /**
      * Handles mouse events by first trying custom handlers, then forwarding to children.
+     * <p>
+     * Only forwards to children whose rendered area contains the mouse position,
+     * ensuring that mouse events are routed to the correct child in multi-panel layouts.
      *
      * @param event the mouse event
      * @return HANDLED if this container or a child handled the event
@@ -104,10 +108,13 @@ public abstract class ContainerElement<T extends ContainerElement<T>> extends St
             return result;
         }
 
-        // Forward to children
+        // Forward to children whose area contains the mouse position
         for (Element child : children) {
-            if (child.handleMouseEvent(event) == EventResult.HANDLED) {
-                return EventResult.HANDLED;
+            Rect area = child.renderedArea();
+            if (area != null && area.contains(event.x(), event.y())) {
+                if (child.handleMouseEvent(event) == EventResult.HANDLED) {
+                    return EventResult.HANDLED;
+                }
             }
         }
 
