@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.layout.cassowary;
+package dev.tamboui.layout;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

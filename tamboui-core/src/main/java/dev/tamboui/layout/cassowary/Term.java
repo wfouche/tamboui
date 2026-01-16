@@ -4,6 +4,8 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
+
 /**
  * A term in a linear expression, representing a coefficient multiplied by a variable.
  *

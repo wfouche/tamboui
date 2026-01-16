@@ -4,6 +4,7 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

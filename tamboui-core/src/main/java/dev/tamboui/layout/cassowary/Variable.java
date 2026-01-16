@@ -4,6 +4,8 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

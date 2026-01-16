@@ -4,6 +4,8 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
+
 /**
  * Constraint strength representing priority in the constraint hierarchy.
  *

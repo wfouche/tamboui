@@ -6,6 +6,7 @@ package dev.tamboui.layout.cassowary;
 
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Flex;
+import dev.tamboui.layout.Fraction;
 
 import java.util.List;
 
@@ -155,11 +156,9 @@ public final class LayoutSolver {
                             .equalTo(target, PERCENTAGE_SIZE_EQ));
 
         } else if (c instanceof Constraint.Ratio) {
-            // Ratio: size == available * num / denom
-            // Use exact Fraction arithmetic
+            // Ratio: size == available * ratio
             Constraint.Ratio ratio = (Constraint.Ratio) c;
-            Fraction target = Fraction.of(available).multiply(
-                    Fraction.of(ratio.numerator(), ratio.denominator()));
+            Fraction target = Fraction.of(available).multiply(ratio.toFraction());
             solver.addConstraint(
                     Expression.variable(size)
                             .equalTo(target, RATIO_SIZE_EQ));
@@ -249,10 +248,15 @@ public final class LayoutSolver {
     }
 
     /**
-     * Converts Fraction sizes to integers while ensuring the sum does not exceed the target.
+     * Converts Fraction sizes to integers using the largest remainder method.
      *
-     * <p>Uses largest remainder method for fair rounding. First takes the floor of each
-     * value, then distributes the remaining space to fractions with the largest remainders.
+     * <p>This method is necessary because simple rounding (Math.round on each value)
+     * can produce totals that don't match the available space. For example, with
+     * constraints [1/3, 2/3] of 100, naive rounding gives [33, 67] = 100, but
+     * [0.333..., 0.666...] might round to [33, 66] = 99, losing a pixel.
+     *
+     * <p>The largest remainder method (also known as Hamilton's method) ensures fair
+     * distribution: floor all values, then give +1 to those with the largest remainders.
      *
      * @param fractionSizes the exact Fraction sizes from the solver
      * @param target        the maximum sum (available space)
@@ -262,52 +266,32 @@ public final class LayoutSolver {
         int n = fractionSizes.length;
         int[] result = new int[n];
 
-        // First, take the floor of each value
+        // Floor all values and track remainders
         int sum = 0;
+        Fraction[] remainders = new Fraction[n];
         for (int i = 0; i < n; i++) {
-            // Use truncation toward zero (floor for positive values)
             result[i] = fractionSizes[i].toInt();
+            remainders[i] = fractionSizes[i].subtract(Fraction.of(result[i]));
             sum += result[i];
         }
 
-        // Calculate remaining space to distribute
+        // Distribute remaining space to segments with largest remainders
         int remaining = target - sum;
-
-        if (remaining > 0) {
-            // Calculate fractional parts and sort indices by remainder (descending)
-            Fraction[] remainders = new Fraction[n];
+        while (remaining > 0) {
+            int maxIdx = -1;
+            Fraction maxRemainder = Fraction.ZERO;
             for (int i = 0; i < n; i++) {
-                remainders[i] = fractionSizes[i].subtract(Fraction.of(result[i]));
-            }
-
-            // Distribute remaining space to fractions with largest remainders
-            // Simple approach: repeatedly find the largest remainder and allocate 1
-            for (int r = 0; r < remaining; r++) {
-                int maxIdx = -1;
-                Fraction maxRemainder = Fraction.ZERO;
-                for (int i = 0; i < n; i++) {
-                    if (remainders[i].compareTo(maxRemainder) > 0) {
-                        maxRemainder = remainders[i];
-                        maxIdx = i;
-                    }
-                }
-                if (maxIdx >= 0 && maxRemainder.isPositive()) {
-                    result[maxIdx]++;
-                    remainders[maxIdx] = Fraction.ZERO; // Mark as allocated
+                if (remainders[i].compareTo(maxRemainder) > 0) {
+                    maxRemainder = remainders[i];
+                    maxIdx = i;
                 }
             }
-        } else if (sum > target) {
-            // If sum exceeds target, shrink values to fit
-            int excess = sum - target;
-            // Shrink from the end, distributing reduction across all segments
-            for (int pass = 0; excess > 0 && pass < n; pass++) {
-                for (int i = n - 1; i >= 0 && excess > 0; i--) {
-                    if (result[i] > 0) {
-                        result[i]--;
-                        excess--;
-                    }
-                }
+            if (maxIdx < 0 || !maxRemainder.isPositive()) {
+                break;
             }
+            result[maxIdx]++;
+            remainders[maxIdx] = Fraction.ZERO;
+            remaining--;
         }
 
         return result;

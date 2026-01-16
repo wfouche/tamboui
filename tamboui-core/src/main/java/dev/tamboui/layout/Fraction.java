@@ -2,7 +2,7 @@
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui.layout.cassowary;
+package dev.tamboui.layout;
 
 /**
  * An immutable exact rational number represented as a fraction.

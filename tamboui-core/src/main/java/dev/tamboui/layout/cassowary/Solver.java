@@ -4,6 +4,8 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
