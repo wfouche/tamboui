@@ -4,6 +4,8 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.Fraction;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -73,8 +75,18 @@ public final class Variable {
      * @param coefficient the coefficient to multiply by
      * @return a term representing coefficient * this
      */
-    public Term times(double coefficient) {
+    public Term times(Fraction coefficient) {
         return new Term(this, coefficient);
+    }
+
+    /**
+     * Creates a term with this variable and the given coefficient.
+     *
+     * @param coefficient the coefficient to multiply by
+     * @return a term representing coefficient * this
+     */
+    public Term times(long coefficient) {
+        return new Term(this, Fraction.of(coefficient));
     }
 
     @Override

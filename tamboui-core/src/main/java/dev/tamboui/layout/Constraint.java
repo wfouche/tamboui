@@ -131,6 +131,15 @@ public interface Constraint {
             return denominator;
         }
 
+        /**
+         * Converts this ratio to a Fraction for exact arithmetic.
+         *
+         * @return a Fraction representing this ratio
+         */
+        public Fraction toFraction() {
+            return Fraction.of(numerator, denominator);
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
