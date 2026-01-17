@@ -85,9 +85,15 @@ public final class EventRouter {
      * Registers an element for event routing.
      * Called during rendering to build the element list.
      * The area is stored internally - elements don't need to track it.
+     * <p>
+     * If an element is already registered, this updates its area but
+     * does not add a duplicate entry.
      */
     public void registerElement(Element element, Rect area) {
-        elements.add(element);
+        // Prevent duplicate registration (element identity check)
+        if (!elementAreas.containsKey(element)) {
+            elements.add(element);
+        }
         elementAreas.put(element, area);
     }
 
@@ -110,14 +116,19 @@ public final class EventRouter {
     /**
      * Routes an event to the appropriate element(s).
      * <p>
-     * Global handlers are called first, in registration order.
-     * If any global handler returns HANDLED, the event is not routed to elements.
+     * For key events, the focused element is given first chance to handle the event.
+     * This allows text inputs to consume character keys before global handlers see them.
+     * Global handlers are called after element routing if the event wasn't handled.
      *
      * @param event the event to route
      * @return HANDLED if any handler handled the event, UNHANDLED otherwise
      */
     public EventResult route(Event event) {
-        // Call global handlers first
+        if (event instanceof KeyEvent) {
+            return routeKeyEvent((KeyEvent) event);
+        }
+
+        // For non-key events, call global handlers first
         for (GlobalEventHandler handler : globalHandlers) {
             EventResult result = handler.handle(event);
             if (result.isHandled()) {
@@ -125,9 +136,6 @@ public final class EventRouter {
             }
         }
 
-        if (event instanceof KeyEvent) {
-            return routeKeyEvent((KeyEvent) event);
-        }
         if (event instanceof MouseEvent) {
             return routeMouseEvent((MouseEvent) event);
         }
@@ -156,7 +164,7 @@ public final class EventRouter {
             return EventResult.HANDLED;
         }
 
-        // Route to focused element first
+        // Route to focused element first - this lets text inputs consume character keys
         String focusedId = focusManager.focusedId();
         if (focusedId != null) {
             for (Element element : elements) {
@@ -175,6 +183,15 @@ public final class EventRouter {
                         }
                     }
                 }
+            }
+        }
+
+        // Call global handlers after focused element but before unfocused elements
+        // This allows global actions (like quit) to work when text input doesn't consume the key
+        for (GlobalEventHandler handler : globalHandlers) {
+            EventResult result = handler.handle(event);
+            if (result.isHandled()) {
+                return result;
             }
         }
 

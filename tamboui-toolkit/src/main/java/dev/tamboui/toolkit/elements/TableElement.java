@@ -22,7 +22,10 @@ import dev.tamboui.widgets.table.TableState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A DSL wrapper for the Table widget.
@@ -210,19 +213,24 @@ public final class TableElement extends StyledElement<TableElement> {
     }
 
     @Override
+    public Map<String, String> styleAttributes() {
+        Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
+        if (title != null) {
+            attrs.put("title", title);
+        }
+        return Collections.unmodifiableMap(attrs);
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;
         }
 
         // Resolve highlight style: explicit > CSS > default
-        Style effectiveHighlightStyle = highlightStyle;
-        if (effectiveHighlightStyle == null) {
-            Style cssStyle = context.childStyle("row", PseudoClassState.ofSelected());
-            effectiveHighlightStyle = cssStyle.equals(context.currentStyle())
-                ? DEFAULT_HIGHLIGHT_STYLE
-                : cssStyle;
-        }
+        Style effectiveHighlightStyle = resolveEffectiveStyle(
+            context, "row", PseudoClassState.ofSelected(),
+            highlightStyle, DEFAULT_HIGHLIGHT_STYLE);
 
         // Resolve highlight symbol: explicit > default
         String effectiveHighlightSymbol = highlightSymbol != null ? highlightSymbol : DEFAULT_HIGHLIGHT_SYMBOL;
@@ -230,12 +238,9 @@ public final class TableElement extends StyledElement<TableElement> {
         // Resolve header style from CSS
         Row effectiveHeader = header;
         if (effectiveHeader != null && effectiveHeader.style().equals(Style.EMPTY)) {
-            Style headerStyle = context.childStyle("header");
-            if (!headerStyle.equals(context.currentStyle())) {
-                effectiveHeader = effectiveHeader.style(headerStyle);
-            } else {
-                effectiveHeader = effectiveHeader.style(DEFAULT_HEADER_STYLE);
-            }
+            // Header row has no explicit style, resolve from CSS or default
+            Style headerStyle = resolveEffectiveStyle(context, "header", null, DEFAULT_HEADER_STYLE);
+            effectiveHeader = effectiveHeader.style(headerStyle);
         }
 
         Table.Builder builder = Table.builder()
@@ -255,7 +260,9 @@ public final class TableElement extends StyledElement<TableElement> {
         }
 
         if (title != null || borderType != null) {
-            Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
+            Block.Builder blockBuilder = Block.builder()
+                    .borders(Borders.ALL)
+                    .styleResolver(styleResolver(context));
             if (title != null) {
                 blockBuilder.title(Title.from(title));
             }
@@ -263,7 +270,7 @@ public final class TableElement extends StyledElement<TableElement> {
                 blockBuilder.borderType(borderType);
             }
             if (borderColor != null) {
-                blockBuilder.borderStyle(Style.EMPTY.fg(borderColor));
+                blockBuilder.borderColor(borderColor);
             }
             builder.block(blockBuilder.build());
         }

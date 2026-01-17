@@ -7,6 +7,7 @@ package dev.tamboui.buffer;
 import dev.tamboui.layout.Position;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Style;
+import dev.tamboui.terminal.AnsiStringBuilder;
 import dev.tamboui.text.Line;
 import dev.tamboui.text.Span;
 
@@ -313,6 +314,16 @@ public final class Buffer {
     }
 
     /**
+     * Creates a deep copy of this buffer.
+     *
+     * @return a new buffer with the same content
+     */
+    public Buffer copy() {
+        Cell[] contentCopy = Arrays.copyOf(content, content.length);
+        return new Buffer(area, contentCopy);
+    }
+
+    /**
      * Calculates the differences between this buffer and another.
      * Returns a list of cell updates needed to transform this buffer into the other.
      *
@@ -344,6 +355,125 @@ public final class Buffer {
         }
 
         return updates;
+    }
+
+    /**
+     * Renders the buffer content as an ANSI-escaped string.
+     * Each row becomes a line of output with embedded ANSI escape codes for styling.
+     * The result can be printed directly to stdout without needing the full TUI system.
+     *
+     * <p>Example usage:
+     * <pre>{@code
+     * Buffer buffer = Buffer.empty(Rect.of(80, 3));
+     * myWidget.render(buffer.area(), buffer);
+     * System.out.println(buffer.toAnsiString());
+     * }</pre>
+     *
+     * @return an ANSI string representation of the buffer
+     */
+    public String toAnsiString() {
+        StringBuilder result = new StringBuilder();
+        Style lastStyle = null;
+
+        for (int y = area.top(); y < area.bottom(); y++) {
+            if (y > area.top()) {
+                result.append("\n");
+            }
+
+            for (int x = area.left(); x < area.right(); x++) {
+                Cell cell = get(x, y);
+
+                // Apply style if changed
+                if (!cell.style().equals(lastStyle)) {
+                    result.append(AnsiStringBuilder.styleToAnsi(cell.style()));
+                    lastStyle = cell.style();
+                }
+
+                result.append(cell.symbol());
+            }
+        }
+
+        // Reset at end
+        result.append(AnsiStringBuilder.RESET);
+        return result.toString();
+    }
+
+    /**
+     * Renders the buffer content as an ANSI-escaped string using explicit cursor positioning.
+     * Each row is preceded by a cursor position escape sequence (CSI row;1H) to ensure
+     * correct rendering in terminal recording players like asciinema.
+     *
+     * @return an ANSI string representation of the buffer with cursor positioning
+     */
+    public String toAnsiStringWithCursorPositioning() {
+        StringBuilder result = new StringBuilder();
+        Style lastStyle = null;
+
+        for (int y = area.top(); y < area.bottom(); y++) {
+            // Position cursor at start of row (1-based coordinates)
+            result.append("\u001b[").append(y - area.top() + 1).append(";1H");
+
+            for (int x = area.left(); x < area.right(); x++) {
+                Cell cell = get(x, y);
+
+                // Apply style if changed
+                if (!cell.style().equals(lastStyle)) {
+                    result.append(AnsiStringBuilder.styleToAnsi(cell.style()));
+                    lastStyle = cell.style();
+                }
+
+                result.append(cell.symbol());
+            }
+        }
+
+        // Reset at end
+        result.append(AnsiStringBuilder.RESET);
+        return result.toString();
+    }
+
+    /**
+     * Renders the buffer content as an ANSI-escaped string, trimming trailing whitespace
+     * from each line. This produces cleaner output when the buffer contains significant
+     * empty space on the right side.
+     *
+     * @return an ANSI string representation of the buffer with trailing spaces removed
+     */
+    public String toAnsiStringTrimmed() {
+        StringBuilder result = new StringBuilder();
+        Style lastStyle = null;
+
+        for (int y = area.top(); y < area.bottom(); y++) {
+            if (y > area.top()) {
+                result.append("\n");
+            }
+
+            // Find the last non-empty cell in this row
+            int lastNonEmpty = area.left() - 1;
+            for (int x = area.right() - 1; x >= area.left(); x--) {
+                Cell cell = get(x, y);
+                if (!cell.symbol().equals(" ") || !cell.style().equals(Style.EMPTY)) {
+                    lastNonEmpty = x;
+                    break;
+                }
+            }
+
+            // Render up to the last non-empty cell
+            for (int x = area.left(); x <= lastNonEmpty; x++) {
+                Cell cell = get(x, y);
+
+                // Apply style if changed
+                if (!cell.style().equals(lastStyle)) {
+                    result.append(AnsiStringBuilder.styleToAnsi(cell.style()));
+                    lastStyle = cell.style();
+                }
+
+                result.append(cell.symbol());
+            }
+        }
+
+        // Reset at end
+        result.append(AnsiStringBuilder.RESET);
+        return result.toString();
     }
 
     private int index(int x, int y) {

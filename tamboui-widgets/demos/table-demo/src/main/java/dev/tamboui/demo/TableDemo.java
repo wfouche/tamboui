@@ -237,6 +237,8 @@ public class TableDemo {
 
         if (selected != null && selected < DATA.size()) {
             String[] data = DATA.get(selected);
+            // Create a search URL for the location
+            String locationUrl = "https://maps.example.com/search?q=" + data[4].replace(" ", "+");
             detailsText = Text.from(
                 Line.from(
                     Span.raw("Name: ").bold(),
@@ -252,7 +254,17 @@ public class TableDemo {
                     Span.raw("  |  Salary: ").bold(),
                     Span.raw(data[3]).magenta(),
                     Span.raw("  |  Location: ").bold(),
-                    Span.raw(data[4]).blue()
+                    Span.raw(data[4])
+                        .hyperlink(locationUrl)
+                        .underlined()
+                        .blue()
+                ),
+                Line.from(
+                    Span.raw("Email: ").bold(),
+                    Span.raw(data[0].toLowerCase().replace(" ", ".") + "@company.com")
+                        .hyperlink("mailto:" + data[0].toLowerCase().replace(" ", ".") + "@company.com")
+                        .underlined()
+                        .cyan()
                 )
             );
         } else {

@@ -6,10 +6,13 @@ package dev.tamboui.toolkit.element;
 
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.CssStyleResolver;
+import dev.tamboui.css.cascade.PseudoClassState;
+import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.toolkit.event.DragHandler;
 import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.toolkit.event.KeyEventHandler;
 import dev.tamboui.toolkit.event.MouseEventHandler;
+import dev.tamboui.toolkit.id.IdGenerator;
 import dev.tamboui.tui.bindings.ActionHandler;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Rect;
@@ -20,7 +23,9 @@ import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -39,11 +44,13 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     protected Constraint layoutConstraint;
     protected String elementId;
     protected Set<String> cssClasses = new LinkedHashSet<>();
+    protected Map<String, String> styleAttrs = new LinkedHashMap<>();
     protected Styleable cssParent;
     protected KeyEventHandler keyHandler;
     protected MouseEventHandler mouseHandler;
     protected DragHandler dragHandler;
     protected boolean draggable;
+    protected boolean focusable;
     protected Rect lastRenderedArea;
 
     /**
@@ -182,18 +189,15 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
     /**
      * Resolves the effective style by merging CSS and inline styles.
      * CSS styles provide the base, inline styles override.
-     * <p>
-     * This method is private because it should only be called once per render,
-     * from the {@link #render} template method. Subclasses should use
-     * {@link RenderContext#currentStyle()} to access the resolved style.
      *
-     * @param context the render context for CSS resolution
+     * @param cssResolver the CSS resolver (may be null)
      * @return the effective style combining CSS and inline styles
      */
-    private Style resolveEffectiveStyle(RenderContext context) {
-        Optional<CssStyleResolver> cssStyle = context.resolveStyle(this);
-        // CSS provides base, inline style overrides
-        return cssStyle.map(resolvedStyle -> resolvedStyle.toStyle().patch(style)).orElseGet(() -> style);
+    private Style resolveEffectiveStyle(CssStyleResolver cssResolver) {
+        if (cssResolver != null) {
+            return cssResolver.toStyle().patch(style);
+        }
+        return style;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -204,13 +208,15 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
      * Renders this element. This is a template method that:
      * <ol>
      *   <li>Resolves the effective CSS + inline style</li>
-     *   <li>Pushes the style onto the context's style stack</li>
+     *   <li>Pushes the style and CSS resolver onto the context's stacks</li>
      *   <li>Calls {@link #renderContent} for subclass-specific rendering</li>
-     *   <li>Pops the style when done</li>
+     *   <li>Pops the style and resolver when done</li>
      * </ol>
      * <p>
      * Subclasses must implement {@link #renderContent} instead of overriding this method.
      * The current style is available via {@link RenderContext#currentStyle()}.
+     * CSS properties not in Style (e.g., border-type) can be accessed from parent
+     * elements via {@link DefaultRenderContext#currentResolver()}.
      *
      * @param frame the frame to render to
      * @param area the area to render in
@@ -222,26 +228,23 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
             return;
         }
         this.lastRenderedArea = area;
-        Style effectiveStyle = resolveEffectiveStyle(context);
+
+        // Resolve CSS for this element
+        CssStyleResolver cssResolver = context.resolveStyle(this).orElse(null);
+        Style effectiveStyle = resolveEffectiveStyle(cssResolver);
 
         if (context instanceof DefaultRenderContext) {
             DefaultRenderContext ctx = (DefaultRenderContext) context;
-            ctx.withElement(this, effectiveStyle, () -> renderContent(frame, area, context));
-            // Self-register for event routing if this element needs events
-            if (needsEventRouting()) {
-                ctx.registerElement(this, area);
+            ctx.withElement(this, effectiveStyle, cssResolver, () -> renderContent(frame, area, context));
+            // Auto-generate ID for focusable elements that don't have one
+            if (isFocusable() && elementId == null) {
+                elementId = IdGenerator.newId(this);
             }
+            ctx.registerElement(this, area);
         } else {
             // Fallback for non-default contexts (e.g., testing)
             renderContent(frame, area, context);
         }
-    }
-
-    /**
-     * Returns whether this element needs to be registered with the event router.
-     */
-    private boolean needsEventRouting() {
-        return draggable || keyHandler != null || mouseHandler != null;
     }
 
     /**
@@ -256,6 +259,104 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
      * @param context the render context
      */
     protected abstract void renderContent(Frame frame, Rect area, RenderContext context);
+
+    /**
+     * Resolves a style for a sub-component following the priority: explicit > CSS > default.
+     * <p>
+     * This helper method standardizes how element sub-components (like cursors, placeholders,
+     * scrollbar thumbs, etc.) resolve their styles. It enables CSS theming while preserving
+     * programmatic control when needed.
+     * <p>
+     * The resolution order is:
+     * <ol>
+     *   <li>If {@code explicitStyle} is non-null, use it (programmatic override)</li>
+     *   <li>Otherwise, check CSS via {@link RenderContext#childStyle(String)}</li>
+     *   <li>If CSS provides styles, use those</li>
+     *   <li>Otherwise, use {@code defaultStyle}</li>
+     * </ol>
+     * <p>
+     * Example usage in a TextInput element:
+     * <pre>{@code
+     * // In renderContent():
+     * Style effectiveCursorStyle = resolveEffectiveStyle(context, "cursor", cursorStyle, DEFAULT_CURSOR_STYLE);
+     * Style effectivePlaceholderStyle = resolveEffectiveStyle(context, "placeholder", placeholderStyle, DEFAULT_PLACEHOLDER_STYLE);
+     * }</pre>
+     * <p>
+     * This enables CSS like:
+     * <pre>{@code
+     * TextInputElement-cursor { text-style: reversed; }
+     * TextInputElement-placeholder { color: gray; }
+     * }</pre>
+     *
+     * @param context the render context for CSS resolution
+     * @param childName the child name (e.g., "cursor", "placeholder", "thumb")
+     * @param explicitStyle the explicitly set style (may be null for CSS/default)
+     * @param defaultStyle the default style to use when no explicit or CSS style is set
+     * @return the resolved style
+     */
+    protected Style resolveEffectiveStyle(RenderContext context,
+                                          String childName,
+                                          Style explicitStyle,
+                                          Style defaultStyle) {
+        return resolveEffectiveStyle(context, childName, null, explicitStyle, defaultStyle);
+    }
+
+    /**
+     * Resolves a style for a sub-component with pseudo-class state, following the priority: explicit > CSS > default.
+     * <p>
+     * Use this overload for stateful children like selected items or focused tabs.
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * Style effectiveHighlightStyle = resolveEffectiveStyle(
+     *     context, "item", PseudoClassState.ofSelected(),
+     *     highlightStyle, DEFAULT_HIGHLIGHT_STYLE);
+     * }</pre>
+     *
+     * @param context the render context for CSS resolution
+     * @param childName the child name (e.g., "item", "row", "tab")
+     * @param state the pseudo-class state (e.g., selected, hover), or null for none
+     * @param explicitStyle the explicitly set style (may be null for CSS/default)
+     * @param defaultStyle the default style to use when no explicit or CSS style is set
+     * @return the resolved style
+     */
+    protected Style resolveEffectiveStyle(RenderContext context,
+                                          String childName,
+                                          PseudoClassState state,
+                                          Style explicitStyle,
+                                          Style defaultStyle) {
+        // Priority 1: Explicit programmatic style
+        if (explicitStyle != null) {
+            return explicitStyle;
+        }
+
+        // Priority 2: CSS child style
+        Style cssStyle = state != null
+            ? context.childStyle(childName, state)
+            : context.childStyle(childName);
+        if (!cssStyle.equals(context.currentStyle())) {
+            // CSS provided specific styling for this child
+            return cssStyle;
+        }
+
+        // Priority 3: Default style
+        return defaultStyle;
+    }
+
+    /**
+     * Gets the StylePropertyResolver for CSS property resolution.
+     * <p>
+     * This is useful for passing to widgets like Block that need to resolve
+     * CSS properties beyond basic styling (e.g., border-type, border-color).
+     *
+     * @param context the render context
+     * @return the StylePropertyResolver, or an empty resolver if no CSS is available
+     */
+    protected StylePropertyResolver styleResolver(RenderContext context) {
+        return context.resolveStyle(this)
+                .map(r -> (StylePropertyResolver) r)
+                .orElse(StylePropertyResolver.empty());
+    }
 
     // Layout constraint
 
@@ -293,9 +394,66 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
         return layoutConstraint;
     }
 
+    // Focusable
+
+    /**
+     * Makes this element focusable, allowing it to participate in TAB navigation.
+     * <p>
+     * When an element is focusable:
+     * <ul>
+     *   <li>It is included in the focus chain for TAB/Shift+TAB navigation</li>
+     *   <li>It receives keyboard events via {@link #handleKeyEvent(KeyEvent, boolean)} when focused</li>
+     *   <li>An ID is required for focus management - if not set via {@link #id(String)},
+     *       one will be auto-generated at render time</li>
+     * </ul>
+     * <p>
+     * Note: {@code focusable()} and {@link #onKeyEvent(KeyEventHandler)} are orthogonal:
+     * <ul>
+     *   <li>Use {@code focusable()} when the element should participate in TAB navigation</li>
+     *   <li>Use {@code onKeyEvent()} to handle keyboard events (works regardless of focusability)</li>
+     *   <li>Use both when you want TAB navigation AND custom key handling</li>
+     * </ul>
+     *
+     * @return this element for chaining
+     */
+    public T focusable() {
+        this.focusable = true;
+        return self();
+    }
+
+    /**
+     * Sets whether this element is focusable for TAB navigation.
+     *
+     * @param focusable true to make focusable, false otherwise
+     * @return this element for chaining
+     * @see #focusable() for more details on focusability
+     */
+    public T focusable(boolean focusable) {
+        this.focusable = focusable;
+        return self();
+    }
+
+    @Override
+    public boolean isFocusable() {
+        return focusable;
+    }
+
     // ID for focus management
 
+    /**
+     * Sets the element's ID for focus management and CSS targeting.
+     * <p>
+     * The ID is immutable once set and cannot be changed. If an ID is needed
+     * but not explicitly provided, calling {@link #focusable()} will auto-generate one.
+     *
+     * @param id the unique identifier for this element
+     * @return this element for chaining
+     * @throws IllegalStateException if the ID has already been set
+     */
     public T id(String id) {
+        if (this.elementId != null) {
+            throw new IllegalStateException("Element ID cannot be changed once set. Current ID: " + this.elementId);
+        }
         this.elementId = id;
         return self();
     }
@@ -360,6 +518,25 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
         return self();
     }
 
+    /**
+     * Sets a style attribute for attribute selector matching.
+     * <p>
+     * Style attributes can be used with CSS attribute selectors like
+     * {@code Panel[data-type="info"]} to target specific elements.
+     *
+     * @param name the attribute name
+     * @param value the attribute value
+     * @return this element for chaining
+     */
+    public T attr(String name, String value) {
+        if (value != null) {
+            this.styleAttrs.put(name, value);
+        } else {
+            this.styleAttrs.remove(name);
+        }
+        return self();
+    }
+
     // Styleable interface implementation
 
     @Override
@@ -377,14 +554,33 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
         return Optional.ofNullable(cssParent);
     }
 
+    @Override
+    public Map<String, String> styleAttributes() {
+        return Collections.unmodifiableMap(styleAttrs);
+    }
+
     // Event handlers
 
     /**
-     * Sets the key event handler for this element.
-     * The handler receives key events when this element is focused.
+     * Sets a key event handler for this element.
+     * <p>
+     * The handler receives keyboard events when:
+     * <ul>
+     *   <li>This element is focused (receives events directly)</li>
+     *   <li>A focused descendant doesn't handle the event (bubbles up)</li>
+     * </ul>
+     * <p>
+     * <strong>Relationship with {@link #focusable()}:</strong>
+     * <ul>
+     *   <li>{@code onKeyEvent()} registers a handler but does NOT make the element focusable</li>
+     *   <li>{@code focusable()} adds the element to TAB navigation but does NOT add a handler</li>
+     *   <li>Use both together when you want TAB navigation AND custom key handling</li>
+     *   <li>Use only {@code onKeyEvent()} for handling keys from focused children or global shortcuts</li>
+     * </ul>
      *
      * @param handler the key event handler
      * @return this element for chaining
+     * @see #focusable()
      */
     public T onKeyEvent(KeyEventHandler handler) {
         this.keyHandler = handler;

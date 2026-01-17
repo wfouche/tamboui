@@ -11,4 +11,9 @@ public interface DemoExtension {
     Property<String> getDescription();
     Property<String> getModule();
     SetProperty<String> getTags();
+
+    /**
+     * If true, this demo is internal and should not appear in the gallery.
+     */
+    Property<Boolean> getInternal();
 }

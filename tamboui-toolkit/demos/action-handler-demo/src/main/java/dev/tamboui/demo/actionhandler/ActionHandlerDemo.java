@@ -1,3 +1,7 @@
+//DEPS dev.tamboui:tamboui-toolkit:LATEST
+//DEPS dev.tamboui:tamboui-jline:LATEST
+//SOURCES CounterComponent.java
+
 /*
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
@@ -54,7 +58,7 @@ public class ActionHandlerDemo {
         // Extend vim bindings with custom 'clear' action bound to 'c'
         var bindings = BindingSets.vim()
                 .toBuilder()
-                .bind("clear", KeyTrigger.ch('c'))
+                .bind(KeyTrigger.ch('c'), "clear")
                 .build();
 
         // Create counter components - they use @OnAction internally

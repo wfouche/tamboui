@@ -1,0 +1,908 @@
+= CSS Styling
+:doctype: book
+:icons: font
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 3
+
+include::_attributes.adoc[]
+
+{project-name} supports CSS-based styling as an alternative to programmatic style configuration.
+Instead of chaining `.bold().cyan().onBlue()` calls, you can define styles in external `.tcss` files and apply them via selectors.
+
+== Why Use CSS?
+
+Programmatic styling works well for simple cases:
+
+[source,java]
+----
+text("Hello").bold().cyan()
+panel("Title", content).rounded().borderColor(Color.BLUE)
+----
+
+But as applications grow, CSS offers advantages:
+
+* **Separation of concerns** - styling lives outside your code
+* **Theming** - switch between light/dark themes at runtime
+* **Designer-friendly** - non-developers can adjust colors and spacing
+* **Consistency** - define styles once, apply everywhere via classes
+
+== The StyleEngine
+
+`StyleEngine` manages stylesheets and resolves styles for elements:
+
+[source,java]
+----
+StyleEngine engine = StyleEngine.create();
+
+// Add inline CSS
+engine.addStylesheet("Panel { border-type: rounded; }");
+
+// Load named themes from classpath
+engine.loadStylesheet("dark", "/themes/dark.tcss");
+engine.loadStylesheet("light", "/themes/light.tcss");
+
+// Switch themes at runtime
+engine.setActiveStylesheet("dark");
+----
+
+== TCSS Format
+
+{project-name} uses `.tcss` (Textual CSS) files - a CSS dialect designed for terminal UIs.
+
+=== Variables
+
+Define reusable values:
+
+[source,css]
+----
+$bg-primary: black;
+$fg-primary: white;
+$accent: cyan;
+$border-color: dark-gray;
+
+Panel {
+    background: $bg-primary;
+    color: $fg-primary;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+}
+----
+
+=== Selectors
+
+Type selectors match element types:
+
+[source,css]
+----
+Panel {
+    border-type: rounded;
+}
+
+Text {
+    color: white;
+}
+----
+
+Class selectors match CSS classes:
+
+[source,css]
+----
+.primary {
+    color: cyan;
+    text-style: bold;
+}
+
+.danger {
+    color: red;
+}
+----
+
+ID selectors match specific elements:
+
+[source,css]
+----
+#sidebar {
+    width: 30;
+    background: dark-gray;
+}
+
+#main-content {
+    padding: 1;
+}
+----
+
+Pseudo-class selectors match element state:
+
+[source,css]
+----
+Panel:focus {
+    border-color: cyan;
+    border-type: double;
+}
+
+Button:hover {
+    text-style: bold;
+}
+
+ListElement-item:selected {
+    background: blue;
+}
+
+ListElement-item:nth-child(even) {
+    background: #1a1a1a;
+}
+----
+
+Supported pseudo-classes: `:focus`, `:hover`, `:disabled`, `:active`, `:selected`, `:first-child`, `:last-child`, `:nth-child(even)`, `:nth-child(odd)`.
+
+Compound selectors combine multiple conditions (no space between parts):
+
+[source,css]
+----
+Panel.primary#main {
+    border-color: cyan;
+}
+----
+
+IMPORTANT: Whitespace matters in selectors:
+
+[source,css]
+----
+/* Text element WITH class "muted" (compound - no space) */
+Text.muted {
+    color: gray;
+}
+
+/* Element with class "muted" INSIDE a Text element (descendant - with space) */
+Text .muted {
+    color: gray;
+}
+
+/* Text element INSIDE an element with class "muted" */
+.muted Text {
+    color: gray;
+}
+----
+
+Descendant and child combinators:
+
+[source,css]
+----
+/* Any Button inside a Panel */
+Panel Button {
+    color: white;
+}
+
+/* Direct child only */
+Panel > Button {
+    text-style: bold;
+}
+----
+
+Selector lists (comma-separated) apply the same styles to multiple selectors:
+
+[source,css]
+----
+/* Apply same styles to multiple selectors */
+.error, .warning, .danger {
+    text-style: bold;
+}
+
+Panel.primary, Panel.secondary {
+    border-type: rounded;
+}
+----
+
+Attribute selectors match elements based on their attributes (title, label, placeholder):
+
+[source,css]
+----
+/* Match elements with a specific attribute value */
+Panel[title="Settings"] {
+    border-color: cyan;
+}
+
+/* Match elements that have an attribute (any value) */
+Panel[title] {
+    border-type: double;
+}
+
+/* Starts with */
+Panel[title^="Test"] {
+    border-color: yellow;
+}
+
+/* Ends with */
+Panel[title$="Output"] {
+    border-color: green;
+}
+
+/* Contains */
+Panel[title*="Tree"] {
+    border-color: magenta;
+}
+----
+
+Attribute selectors can be combined with other selectors:
+
+[source,css]
+----
+/* Attribute selector with class */
+Panel.sidebar[title="Navigation"] {
+    border-color: cyan;
+    border-type: double;
+}
+
+/* Attribute selector with pseudo-class */
+TextInputElement[placeholder]:focus {
+    border-color: yellow;
+}
+
+/* Nested elements inside a panel with specific title */
+Panel[title="Settings"] TextInputElement {
+    border-type: rounded;
+}
+
+/* Direct child with attribute */
+Panel[title="Form"] > TextInputElement[placeholder="Enter name..."] {
+    border-color: green;
+}
+
+/* Multiple attribute selectors */
+TextInputElement[title="Username"][placeholder] {
+    color: cyan;
+}
+
+/* Selector list with attribute selectors */
+Panel[title="Input"], Panel[title="Output"], Panel[title="Logs"] {
+    border-color: blue;
+}
+
+/* Style child elements based on parent's attribute */
+Panel[title^="Test"] GaugeElement {
+    color: yellow;
+}
+
+/* Combine with ID selector */
+#main-panel[title="Dashboard"] {
+    border-type: double;
+    border-color: cyan;
+}
+----
+
+Elements expose the following attributes for CSS matching:
+
+[cols="1,2",options="header"]
+|===
+|Element |Available Attributes
+
+|`Panel`
+|`title`, `bottom-title`
+
+|`DialogElement`
+|`title`
+
+|`ListElement`
+|`title`
+
+|`TableElement`
+|`title`
+
+|`TabsElement`
+|`title`
+
+|`GaugeElement`
+|`title`, `label`
+
+|`LineGaugeElement`
+|`label`
+
+|`SparklineElement`
+|`title`
+
+|`ChartElement`
+|`title`
+
+|`BarChartElement`
+|`title`
+
+|`CalendarElement`
+|`title`
+
+|`CanvasElement`
+|`title`
+
+|`TextInputElement`
+|`title`, `placeholder`
+
+|`TextAreaElement`
+|`title`, `placeholder`
+|===
+
+=== Targeting Elements: Practical Examples
+
+This section shows common patterns for targeting specific elements in your UI.
+
+==== Styling elements by location
+
+[source,css]
+----
+/* All text elements inside the sidebar */
+#sidebar Text {
+    color: gray;
+}
+
+/* Only direct children of the sidebar */
+#sidebar > Text {
+    text-style: bold;
+}
+
+/* Gauges inside any panel with class "metrics" */
+Panel.metrics GaugeElement {
+    color: green;
+}
+
+/* Text inside a list inside a panel */
+Panel ListElement Text {
+    color: cyan;
+}
+----
+
+==== Styling elements by type and class
+
+[source,css]
+----
+/* All panels with "card" class */
+Panel.card {
+    border-type: rounded;
+    padding: 1;
+}
+
+/* Primary buttons vs danger buttons */
+Button.primary {
+    color: cyan;
+    text-style: bold;
+}
+
+Button.danger {
+    color: red;
+    text-style: bold;
+}
+
+/* Muted text anywhere */
+Text.muted {
+    color: gray;
+    text-style: dim;
+}
+----
+
+==== Styling based on state
+
+[source,css]
+----
+/* Focused input fields */
+TextInputElement:focus {
+    border-color: cyan;
+}
+
+/* Selected items in any list */
+ListElement-item:selected {
+    background: blue;
+    text-style: bold;
+}
+
+/* Alternating row colors in tables */
+TableElement-row:nth-child(even) {
+    background: #1a1a1a;
+}
+
+/* First and last items */
+ListElement-item:first-child {
+    border-color: yellow;
+}
+
+ListElement-item:last-child {
+    border-color: yellow;
+}
+----
+
+==== Combining conditions
+
+[source,css]
+----
+/* Focused panel with primary class */
+Panel.primary:focus {
+    border-color: cyan;
+    border-type: double;
+}
+
+/* Selected item inside a focused list */
+ListElement:focus ListElement-item:selected {
+    background: cyan;
+    color: black;
+}
+
+/* Specific element by ID when focused */
+#username-input:focus {
+    border-color: green;
+}
+
+/* Text with multiple classes */
+Text.title.large {
+    text-style: bold;
+    color: white;
+}
+----
+
+==== Styling child components
+
+Many elements have styleable sub-components accessed via child selectors:
+
+[source,css]
+----
+/* Style the filled portion of gauges */
+GaugeElement-filled {
+    color: green;
+}
+
+/* Style the unfilled portion of line gauges */
+LineGaugeElement-unfilled {
+    color: dark-gray;
+}
+
+/* Style list items */
+ListElement-item {
+    color: white;
+}
+
+/* Style selected tab */
+TabsElement-tab:selected {
+    text-style: bold reversed;
+}
+
+/* Style table header */
+TableElement-header {
+    text-style: bold;
+    color: cyan;
+}
+
+/* Style cursor in text input */
+TextInputElement-cursor {
+    text-style: reversed;
+    background: yellow;
+}
+
+/* Style placeholder text */
+TextInputElement-placeholder {
+    color: gray;
+    text-style: italic;
+}
+----
+
+==== Scoped styling with selector lists
+
+[source,css]
+----
+/* Apply same border style to multiple panel types */
+#header, #footer, #sidebar {
+    border-type: rounded;
+    border-color: gray;
+}
+
+/* Multiple element types with same styling */
+GaugeElement, LineGaugeElement, SparklineElement {
+    color: cyan;
+}
+
+/* Multiple states */
+TextInputElement:focus, TextAreaElement:focus {
+    border-color: yellow;
+}
+
+/* Complex selector list */
+Panel.card Text.title,
+Panel.card Text.subtitle,
+DialogElement Text.title {
+    text-style: bold;
+}
+----
+
+=== Nesting
+
+Use `&` for nested rules:
+
+[source,css]
+----
+Panel {
+    border-type: rounded;
+    border-color: gray;
+
+    &:focus {
+        border-color: cyan;
+        border-type: double;
+    }
+
+    &.primary {
+        border-color: blue;
+    }
+}
+----
+
+=== Properties
+
+==== Style Properties
+
+[cols="1,2,2",options="header"]
+|===
+|Property |Values |Example
+
+|`color`
+|Named colors, hex, rgb
+|`color: cyan;` `color: #ff5500;`
+
+|`background`
+|Named colors, hex, rgb
+|`background: black;`
+
+|`text-style`
+|bold, dim, italic, underlined, reversed
+|`text-style: bold;`
+
+|`border-type`
+|plain, rounded, double, thick
+|`border-type: rounded;`
+
+|`border-color`
+|Named colors, hex, rgb
+|`border-color: cyan;`
+
+|`padding`
+|Single value or top right bottom left
+|`padding: 1;` `padding: 1 2 1 2;`
+
+|`text-align`
+|left, center, right
+|`text-align: center;`
+
+|`width`
+|fit, fill
+|`width: fit;`
+|===
+
+==== Layout Properties
+
+These properties control how elements are sized and positioned within their containers.
+
+[cols="1,2,2",options="header"]
+|===
+|Property |Values |Example
+
+|`height`
+|Constraint for vertical sizing (used by Column)
+|`height: 5;` `height: fill;` `height: 50%;`
+
+|`width`
+|Constraint for horizontal sizing (used by Row)
+|`width: 10;` `width: fit;` `width: 25%;`
+
+|`flex`
+|Flex positioning mode
+|`flex: center;` `flex: space-between;`
+
+|`spacing`
+|Gap between children in cells
+|`spacing: 1;`
+
+|`margin`
+|Margin around element (single value or top right bottom left)
+|`margin: 2;` `margin: 1 2 1 2;`
+
+|`direction`
+|Layout direction for panels
+|`direction: horizontal;` `direction: vertical;`
+|===
+
+===== Constraint Values
+
+The `height` and `width` properties accept constraint values:
+
+[cols="1,3",options="header"]
+|===
+|Value |Description
+
+|`<number>`
+|Fixed size in cells (e.g., `height: 5;`)
+
+|`<number>%`
+|Percentage of available space (e.g., `width: 50%;`)
+
+|`fill`
+|Fill available space with weight 1 (e.g., `height: fill;`)
+
+|`fill(<weight>)`
+|Fill with specified weight (e.g., `height: fill(2);`)
+
+|`fit`
+|Size to content (e.g., `width: fit;`)
+
+|`min(<value>)`
+|Minimum size (e.g., `height: min(3);`)
+
+|`max(<value>)`
+|Maximum size (e.g., `height: max(10);`)
+
+|`<n>/<d>`
+|Ratio (e.g., `width: 1/3;`)
+|===
+
+===== Flex Values
+
+The `flex` property controls how remaining space is distributed:
+
+[cols="1,3",options="header"]
+|===
+|Value |Description
+
+|`start`
+|Position items at the start, remaining space at end
+
+|`center`
+|Center items, distribute remaining space on both sides
+
+|`end`
+|Position items at the end, remaining space at start
+
+|`space-between`
+|Distribute items with space between them
+
+|`space-around`
+|Distribute items with space around each
+
+|`space-evenly`
+|Distribute items with equal space between and around
+|===
+
+===== Layout Example
+
+This example shows how to use CSS layout properties to create a centered footer:
+
+[source,css]
+----
+/* Center the footer content */
+.footer-row {
+    flex: center;
+}
+
+/* Size text to content width, allowing flex to center */
+.footer-row .title {
+    width: fit;
+}
+
+.footer-row .dim {
+    width: fit;
+}
+
+/* Fixed heights for header/footer panels */
+.header-panel {
+    height: 3;
+}
+
+.footer-panel {
+    height: 3;
+}
+
+/* Main content fills remaining space */
+.main-content {
+    height: fill;
+}
+----
+
+[source,java]
+----
+column(
+    panel(header()).addClass("header-panel"),
+    panel(content()).addClass("main-content"),
+    panel(() -> row(
+        text("Status: ").addClass("title"),
+        text("Ready").addClass("dim")
+    ).addClass("footer-row")).addClass("footer-panel")
+)
+----
+
+Named colors: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `dark-gray`, and their bright variants.
+
+=== Importance
+
+Override specificity with `!important`:
+
+[source,css]
+----
+.error {
+    color: red !important;
+}
+----
+
+== Applying Styles
+
+=== With Toolkit DSL
+
+Elements automatically participate in CSS styling when you set IDs and classes:
+
+[source,java]
+----
+panel("Settings",
+    text("Username").cssClass("label"),
+    textInput(usernameState).id("username-input"),
+    text("Password").cssClass("label"),
+    textInput(passwordState).id("password-input").cssClass("secret")
+)
+.id("settings-panel")
+.cssClass("primary")
+----
+
+=== With ToolkitRunner
+
+Pass the StyleEngine when creating the runner:
+
+[source,java]
+----
+StyleEngine engine = StyleEngine.create();
+engine.loadStylesheet("dark", "/themes/dark.tcss");
+engine.setActiveStylesheet("dark");
+
+try (var runner = ToolkitRunner.builder()
+        .styleEngine(engine)
+        .build()) {
+    runner.run(() -> myApp());
+}
+----
+
+=== Implementing Styleable
+
+For custom widgets outside the Toolkit, implement the `Styleable` interface:
+
+[source,java]
+----
+public class MyWidget implements Widget, Styleable {
+    private String id;
+    private Set<String> classes = new HashSet<>();
+
+    @Override
+    public String styleType() {
+        return "MyWidget";  // Used for type selectors
+    }
+
+    @Override
+    public Optional<String> cssId() {
+        return Optional.ofNullable(id);
+    }
+
+    @Override
+    public Set<String> cssClasses() {
+        return classes;
+    }
+
+    @Override
+    public Optional<Styleable> cssParent() {
+        return Optional.empty();  // Or return parent for descendant selectors
+    }
+}
+----
+
+Then resolve and apply styles:
+
+[source,java]
+----
+CssStyleResolver resolved = engine.resolve(widget);
+
+Style style = Style.EMPTY;
+if (resolved.foreground() != null) {
+    style = style.fg(resolved.foreground());
+}
+if (resolved.background() != null) {
+    style = style.bg(resolved.background());
+}
+style = style.addModifiers(resolved.modifiers());
+----
+
+== Theme Switching
+
+Switch themes at runtime:
+
+[source,java]
+----
+@OnAction("toggleTheme")
+void onToggleTheme(Event event) {
+    String current = engine.getActiveStylesheet();
+    String next = "dark".equals(current) ? "light" : "dark";
+    engine.setActiveStylesheet(next);
+}
+----
+
+Listen for style changes:
+
+[source,java]
+----
+engine.addChangeListener(() -> {
+    // Styles changed, trigger redraw
+    requestRedraw();
+});
+----
+
+== Example Theme Files
+
+.dark.tcss
+[source,css]
+----
+$bg-primary: black;
+$fg-primary: white;
+$accent: cyan;
+$border-color: dark-gray;
+
+* {
+    color: $fg-primary;
+    background: $bg-primary;
+}
+
+Panel {
+    border-type: rounded;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+    border-type: double;
+}
+
+.primary {
+    color: $accent;
+    text-style: bold;
+}
+
+.danger {
+    color: red;
+}
+
+.muted {
+    color: gray;
+}
+----
+
+.light.tcss
+[source,css]
+----
+$bg-primary: white;
+$fg-primary: black;
+$accent: blue;
+$border-color: gray;
+
+* {
+    color: $fg-primary;
+    background: $bg-primary;
+}
+
+Panel {
+    border-type: rounded;
+    border-color: $border-color;
+}
+
+Panel:focus {
+    border-color: $accent;
+    border-type: double;
+}
+
+.primary {
+    color: $accent;
+    text-style: bold;
+}
+----
+
+== Next Steps
+
+* link:api-levels.html[API Levels] - understanding the different abstraction layers
+* link:widgets.html[Widgets Reference] - available components to style
+* link:developer-guide.html[Developer Guide] - creating custom styleable widgets

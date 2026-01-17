@@ -110,6 +110,14 @@ public final class Line {
         return patchStyle(Style.EMPTY.underlined());
     }
 
+    public Line hyperlink(String url) {
+        return patchStyle(Style.EMPTY.hyperlink(url));
+    }
+
+    public Line hyperlink(String url, String id) {
+        return patchStyle(Style.EMPTY.hyperlink(url, id));
+    }
+
     /**
      * Returns the raw text content without styling.
      */

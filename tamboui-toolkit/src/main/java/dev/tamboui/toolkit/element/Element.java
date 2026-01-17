@@ -43,6 +43,43 @@ public interface Element {
     }
 
     /**
+     * Returns the preferred width of this element in cells.
+     * Used when the element has a {@link Constraint.Fit} constraint.
+     *
+     * @return the preferred width, or 0 if not applicable
+     */
+    default int preferredWidth() {
+        return 0;
+    }
+
+    /**
+     * Returns the preferred height of this element in cells.
+     * Used when the element has a {@link Constraint.Fit} constraint.
+     *
+     * @return the preferred height, or 0 if not applicable
+     */
+    default int preferredHeight() {
+        return 0;
+    }
+
+    /**
+     * Returns the preferred height of this element given an available width and render context.
+     * <p>
+     * This is useful for elements that may wrap content (like text) where the
+     * height depends on the available width. The render context allows CSS-aware
+     * height calculation where properties like {@code text-overflow} may be set via CSS.
+     * <p>
+     * When context is null, implementations should use programmatic property values only.
+     *
+     * @param availableWidth the available width in cells
+     * @param context the render context for CSS resolution, may be null
+     * @return the preferred height given the available width
+     */
+    default int preferredHeight(int availableWidth, RenderContext context) {
+        return preferredHeight();
+    }
+
+    /**
      * Returns whether this element can receive focus.
      *
      * @return true if focusable, false otherwise

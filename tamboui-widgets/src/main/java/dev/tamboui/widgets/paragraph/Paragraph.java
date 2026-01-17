@@ -6,12 +6,16 @@ package dev.tamboui.widgets.paragraph;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
+import dev.tamboui.style.Hyperlink;
 import dev.tamboui.style.PropertyKey;
 import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.style.StandardPropertyKeys;
@@ -147,8 +151,6 @@ public final class Paragraph implements Widget {
         }
 
         switch (overflow) {
-            case CLIP:
-                return lines;
             case WRAP_CHARACTER:
             case WRAP_WORD:
                 return wrapLines(lines, maxWidth);
@@ -158,9 +160,46 @@ public final class Paragraph implements Widget {
                 return truncateWithEllipsis(lines, maxWidth, EllipsisPosition.START);
             case ELLIPSIS_MIDDLE:
                 return truncateWithEllipsis(lines, maxWidth, EllipsisPosition.MIDDLE);
+            case CLIP:
             default:
-                return lines;
+                // Always clip as safety measure to prevent rendering outside bounds
+                return clipLines(lines, maxWidth);
         }
+    }
+
+    private List<Line> clipLines(List<Line> lines, int maxWidth) {
+        List<Line> result = new ArrayList<>();
+
+        for (Line line : lines) {
+            if (line.width() <= maxWidth) {
+                result.add(line);
+                continue;
+            }
+
+            // Need to clip - preserve spans up to maxWidth
+            List<Span> clippedSpans = new ArrayList<>();
+            int remainingWidth = maxWidth;
+
+            for (Span span : line.spans()) {
+                if (remainingWidth <= 0) {
+                    break;
+                }
+
+                String content = span.content();
+                if (content.length() <= remainingWidth) {
+                    clippedSpans.add(span);
+                    remainingWidth -= content.length();
+                } else {
+                    // Partial span - truncate content
+                    clippedSpans.add(new Span(content.substring(0, remainingWidth), span.style()));
+                    break;
+                }
+            }
+
+            result.add(Line.from(clippedSpans));
+        }
+
+        return result;
     }
 
     private enum EllipsisPosition { START, MIDDLE, END }
@@ -259,10 +298,15 @@ public final class Paragraph implements Widget {
         List<Line> wrapped = new ArrayList<>();
         List<Span> currentSpans = new ArrayList<>();
         int currentWidth = 0;
+        // Track hyperlinks that need IDs for multi-line wrapping
+        Map<String, String> hyperlinkIds = new HashMap<>();
 
         for (Span span : line.spans()) {
             String content = span.content();
             Style spanStyle = span.style();
+            
+            // Ensure hyperlinks have IDs when wrapping across lines
+            Style wrappedStyle = ensureHyperlinkIdForWrapping(spanStyle, hyperlinkIds);
 
             int i = 0;
             while (i < content.length()) {
@@ -278,7 +322,7 @@ public final class Paragraph implements Widget {
                 int end = Math.min(i + remainingWidth, content.length());
                 String chunk = content.substring(i, end);
 
-                currentSpans.add(new Span(chunk, spanStyle));
+                currentSpans.add(new Span(chunk, wrappedStyle));
                 currentWidth += chunk.length();
                 i = end;
             }
@@ -292,41 +336,144 @@ public final class Paragraph implements Widget {
     }
 
     private List<Line> wrapLineByWord(Line line, int maxWidth) {
+        // Build a character-to-style mapping to preserve span information
+        List<Span> spans = line.spans();
+        if (spans.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Build full text and track which span each character belongs to
+        StringBuilder fullText = new StringBuilder();
+        List<Style> charStyles = new ArrayList<>();
+        Map<String, String> hyperlinkIds = new HashMap<>();
+
+        for (Span span : spans) {
+            String content = span.content();
+            Style spanStyle = span.style();
+            
+            // Ensure hyperlinks have IDs when wrapping across lines
+            Style wrappedStyle = ensureHyperlinkIdForWrapping(spanStyle, hyperlinkIds);
+            
+            for (int i = 0; i < content.length(); i++) {
+                fullText.append(content.charAt(i));
+                charStyles.add(wrappedStyle);
+            }
+        }
+
+        String text = fullText.toString();
         List<Line> wrapped = new ArrayList<>();
-        String fullText = lineToString(line);
-        Style lineStyle = getLineStyle(line);
+        int pos = 0;
 
-        String[] words = fullText.split("(?<=\\s)|(?=\\s)");
-        StringBuilder currentLine = new StringBuilder();
-
-        for (String word : words) {
-            if (currentLine.length() + word.length() <= maxWidth) {
-                currentLine.append(word);
-            } else {
-                if (currentLine.length() > 0) {
-                    wrapped.add(Line.from(new Span(stripTrailing(currentLine.toString()), lineStyle)));
-                    currentLine = new StringBuilder();
-                }
-                // Handle words longer than maxWidth
-                if (word.length() > maxWidth) {
-                    // Break long word by character
-                    String remaining = word;
-                    while (remaining.length() > maxWidth) {
-                        wrapped.add(Line.from(new Span(remaining.substring(0, maxWidth), lineStyle)));
-                        remaining = remaining.substring(maxWidth);
+        while (pos < text.length()) {
+            // Find the next word break point
+            int lineEnd = findNextWordBreak(text, pos, maxWidth);
+            
+            // Extract the line and reconstruct spans with correct styles
+            List<Span> lineSpans = new ArrayList<>();
+            int spanStart = pos;
+            Style currentStyle = charStyles.get(pos);
+            
+            for (int i = pos; i < lineEnd; i++) {
+                Style charStyle = charStyles.get(i);
+                if (!charStyle.equals(currentStyle)) {
+                    // Style changed, create a span for the previous style
+                    if (spanStart < i) {
+                        lineSpans.add(new Span(text.substring(spanStart, i), currentStyle));
                     }
-                    currentLine.append(remaining);
-                } else {
-                    currentLine.append(stripLeading(word));
+                    spanStart = i;
+                    currentStyle = charStyle;
+                }
+            }
+            
+            // Add the final span
+            if (spanStart < lineEnd) {
+                lineSpans.add(new Span(text.substring(spanStart, lineEnd), currentStyle));
+            }
+            
+            wrapped.add(Line.from(lineSpans));
+            pos = lineEnd;
+            
+            // Skip leading whitespace at the start of next line (but preserve trailing whitespace on current line)
+            // Only skip if we broke at a word boundary (whitespace), not if we broke mid-word
+            if (lineEnd < text.length() && Character.isWhitespace(text.charAt(lineEnd - 1))) {
+                // We already included the whitespace in the line, so skip it for the next line
+                while (pos < text.length() && Character.isWhitespace(text.charAt(pos))) {
+                    pos++;
                 }
             }
         }
 
-        if (currentLine.length() > 0) {
-            wrapped.add(Line.from(new Span(stripTrailing(currentLine.toString()), lineStyle)));
+        return wrapped;
+    }
+
+    /**
+     * Finds the next word break point for word wrapping.
+     * Tries to break at word boundaries, but breaks by character if word is too long.
+     *
+     * @param text the full text
+     * @param startPos the starting position
+     * @param maxWidth the maximum width for the line
+     * @return the position to break at (exclusive)
+     */
+    private int findNextWordBreak(String text, int startPos, int maxWidth) {
+        int textLength = text.length();
+        int maxEnd = Math.min(startPos + maxWidth, textLength);
+        
+        // If we can fit everything, return the end
+        if (maxEnd >= textLength) {
+            return textLength;
+        }
+        
+        // Look backwards from maxEnd for a word boundary (whitespace)
+        for (int i = maxEnd - 1; i > startPos; i--) {
+            if (Character.isWhitespace(text.charAt(i))) {
+                return i + 1; // Break after whitespace
+            }
+        }
+        
+        // No word boundary found - check if we can break at punctuation
+        for (int i = maxEnd - 1; i > startPos; i--) {
+            char c = text.charAt(i);
+            if (c == '-' || c == '/' || c == '\\') {
+                return i + 1; // Break after punctuation
+            }
+        }
+        
+        // No good break point - break at character boundary (for long words)
+        return maxEnd;
+    }
+
+    /**
+     * Ensures that a hyperlink has an ID when it will wrap across multiple lines.
+     * This allows all wrapped chunks to share the same ID and form one continuous link.
+     *
+     * @param style the style that may contain a hyperlink
+     * @param hyperlinkIds a map to track and reuse IDs for the same URL
+     * @return a style with an ID-assigned hyperlink if needed
+     */
+    private Style ensureHyperlinkIdForWrapping(Style style, java.util.Map<String, String> hyperlinkIds) {
+        Optional<Hyperlink> hyperlinkOpt = style.hyperlink();
+        if (!hyperlinkOpt.isPresent()) {
+            return style;
         }
 
-        return wrapped;
+        Hyperlink hyperlink = hyperlinkOpt.get();
+        // If hyperlink already has an ID, use it as-is
+        if (hyperlink.id().isPresent()) {
+            return style;
+        }
+
+        // Generate or reuse an ID for this URL
+        String url = hyperlink.url();
+        String id = hyperlinkIds.get(url);
+        if (id == null) {
+            // Generate a simple ID based on URL hash
+            id = "link-" + Math.abs(url.hashCode());
+            hyperlinkIds.put(url, id);
+        }
+
+        // Return style with hyperlink that has an ID
+        return style.hyperlink(url, id);
     }
 
     // Java 8 compatible alternatives to String.stripLeading() and stripTrailing()

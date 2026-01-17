@@ -93,4 +93,37 @@ class StyleTest {
 
         assertThat(merged.fg()).contains(Color.GREEN);
     }
+
+    @Test
+    @DisplayName("Style hyperlink stores url")
+    void hyperlinkUrl() {
+        Style style = Style.EMPTY.hyperlink("https://example.com");
+        assertThat(style.hyperlink()).contains(Hyperlink.of("https://example.com"));
+    }
+
+    @Test
+    @DisplayName("Style hyperlink stores url and id")
+    void hyperlinkUrlAndId() {
+        Style style = Style.EMPTY.hyperlink("https://example.com", "link-1");
+        assertThat(style.hyperlink()).contains(Hyperlink.of("https://example.com", "link-1"));
+    }
+
+    @Test
+    @DisplayName("Style hyperlink accepts Hyperlink instance")
+    void hyperlinkInstance() {
+        Hyperlink hyperlink = Hyperlink.of("https://example.com", "link-2");
+        Style style = Style.EMPTY.hyperlink(hyperlink);
+        assertThat(style.hyperlink()).contains(hyperlink);
+    }
+
+    @Test
+    @DisplayName("Style preserves hyperlink across style modifiers")
+    void hyperlinkPreservedAcrossModifiers() {
+        Style style = Style.EMPTY.hyperlink("https://example.com")
+            .fg(Color.RED)
+            .underlined();
+
+        assertThat(style.hyperlink()).contains(Hyperlink.of("https://example.com"));
+    }
+
 }

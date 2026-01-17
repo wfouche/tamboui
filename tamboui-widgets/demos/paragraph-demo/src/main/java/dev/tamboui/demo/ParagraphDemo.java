@@ -42,6 +42,7 @@ import java.io.IOException;
  * - Colored text
  * - Scroll support
  * - Block integration
+ * - Hyperlinks (OSC8)
  */
 public class ParagraphDemo {
 
@@ -138,10 +139,18 @@ public class ParagraphDemo {
      * Render a paragraph with centered text alignment.
      */
     private void renderCenteredParagraph(Frame frame, Rect area) {
-        String text = "Centered text\nwith multiple lines.\nCheck out the recipe!";
+        Text text = Text.from(
+            Line.from("Centered text"),
+            Line.from("with multiple lines."),
+            Line.from(
+                Span.raw("Visit "),
+                Span.raw("https://tamboui.dev").hyperlink("https://tamboui.dev").underlined().cyan(),
+                Span.raw(" for docs!")
+            )
+        );
         
         Paragraph paragraph = Paragraph.builder()
-            .text(Text.from(text))
+            .text(text)
             .style(Style.EMPTY.fg(Color.WHITE))
             .alignment(Alignment.CENTER)
             .block(Block.builder()
@@ -180,7 +189,15 @@ public class ParagraphDemo {
                 Span.styled(secretIngredient, Style.EMPTY.fg(Color.RED).bold())
             ),
             Line.from("Instructions:").bold().fg(Color.YELLOW),
-            Line.from(longLine).fg(Color.GREEN).italic()
+            Line.from(longLine).fg(Color.GREEN).italic(),
+            Line.from(""),
+            Line.from(
+                Span.raw("Full recipe at: ").dim(),
+                Span.raw("https://example.com/ratatouille")
+                    .hyperlink("https://example.com/ratatouille", "recipe-link")
+                    .underlined()
+                    .cyan()
+            )
         );
 
         Paragraph paragraph = Paragraph.builder()

@@ -4,6 +4,7 @@
  */
 package dev.tamboui.toolkit.elements;
 
+import dev.tamboui.css.cascade.CssStyleResolver;
 import dev.tamboui.css.cascade.PseudoClassState;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.toolkit.element.StyledElement;
@@ -15,12 +16,16 @@ import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.block.BorderType;
 import dev.tamboui.widgets.block.Borders;
 import dev.tamboui.widgets.block.Title;
+import dev.tamboui.text.Span;
 import dev.tamboui.widgets.tabs.Tabs;
 import dev.tamboui.widgets.tabs.TabsState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A DSL wrapper for the Tabs widget.
@@ -158,29 +163,48 @@ public final class TabsElement extends StyledElement<TabsElement> {
     }
 
     @Override
+    public Map<String, String> styleAttributes() {
+        Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
+        if (title != null) {
+            attrs.put("title", title);
+        }
+        return Collections.unmodifiableMap(attrs);
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;
         }
 
+        // Resolve base tab style from CSS
+        Style baseTabStyle = context.childStyle("tab");
+        Style effectiveTabStyle = baseTabStyle.equals(context.currentStyle())
+            ? context.currentStyle()
+            : context.currentStyle().patch(baseTabStyle);
+
         // Resolve highlight style: explicit > CSS > default
-        Style effectiveHighlightStyle = highlightStyle;
-        if (effectiveHighlightStyle == null) {
-            Style cssStyle = context.childStyle("tab", PseudoClassState.ofSelected());
-            effectiveHighlightStyle = cssStyle.equals(context.currentStyle())
-                ? DEFAULT_HIGHLIGHT_STYLE
-                : cssStyle;
-        }
+        Style effectiveHighlightStyle = resolveEffectiveStyle(
+            context, "tab", PseudoClassState.ofSelected(),
+            highlightStyle, DEFAULT_HIGHLIGHT_STYLE);
+
+        // Resolve divider style from CSS
+        Style dividerCssStyle = context.childStyle("divider");
+        Span dividerSpan = dividerCssStyle.equals(context.currentStyle())
+            ? Span.raw(divider)
+            : Span.styled(divider, dividerCssStyle);
 
         Tabs.Builder builder = Tabs.builder()
             .titles(titles.toArray(new String[0]))
-            .style(context.currentStyle())
+            .style(effectiveTabStyle)
             .highlightStyle(effectiveHighlightStyle)
-            .divider(divider)
+            .divider(dividerSpan)
             .padding(paddingLeft, paddingRight);
 
         if (title != null || borderType != null) {
-            Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
+            Block.Builder blockBuilder = Block.builder()
+                    .borders(Borders.ALL)
+                    .styleResolver(styleResolver(context));
             if (title != null) {
                 blockBuilder.title(Title.from(title));
             }
@@ -188,7 +212,7 @@ public final class TabsElement extends StyledElement<TabsElement> {
                 blockBuilder.borderType(borderType);
             }
             if (borderColor != null) {
-                blockBuilder.borderStyle(Style.EMPTY.fg(borderColor));
+                blockBuilder.borderColor(borderColor);
             }
             builder.block(blockBuilder.build());
         }

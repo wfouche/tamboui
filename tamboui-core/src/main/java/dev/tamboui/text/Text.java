@@ -138,6 +138,14 @@ public final class Text {
         return patchStyle(Style.EMPTY.underlined());
     }
 
+    public Text hyperlink(String url) {
+        return patchStyle(Style.EMPTY.hyperlink(url));
+    }
+
+    public Text hyperlink(String url, String id) {
+        return patchStyle(Style.EMPTY.hyperlink(url, id));
+    }
+
     /**
      * Returns the raw text content without styling.
      */

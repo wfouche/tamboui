@@ -6,8 +6,10 @@ package dev.tamboui.toolkit.element;
 
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.CssStyleResolver;
+import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
+import dev.tamboui.terminal.Frame;
 
 import java.util.Optional;
 
@@ -90,7 +92,7 @@ public interface RenderContext {
      * Resolves CSS style for a child element.
      * <p>
      * The child type is derived from the current element's type plus the child name
-     * (e.g., for a ListContainer rendering, "item" becomes "ListContainer-item").
+     * (e.g., for a ListElement rendering, "item" becomes "ListElement-item").
      * <p>
      * Example usage:
      * <pre>{@code
@@ -100,9 +102,9 @@ public interface RenderContext {
      * <p>
      * This enables CSS selectors like:
      * <pre>{@code
-     * ListContainer-item { color: white; }
-     * ListContainer-item:selected { color: cyan; text-style: bold; }
-     * #nav ListContainer ListContainer-item:selected { color: green; }
+     * ListElement-item { color: white; }
+     * ListElement-item:selected { color: cyan; text-style: bold; }
+     * #nav ListElement ListElement-item:selected { color: green; }
      * }</pre>
      *
      * @param childName the child name (e.g., "item", "header", "tab")
@@ -171,6 +173,30 @@ public interface RenderContext {
      */
     default Style childStyle(String childName, ChildPosition position, dev.tamboui.css.cascade.PseudoClassState state) {
         return currentStyle();  // fallback when no CSS engine
+    }
+
+    /**
+     * Renders a child element within the given area.
+     * <p>
+     * Container elements should use this method instead of calling
+     * {@code child.render()} directly. This allows the infrastructure
+     * to handle errors gracefully when fault-tolerant mode is enabled,
+     * and ensures that all rendered elements are properly registered with
+     * the event router, enabling them to receive key and mouse events.
+     * <p>
+     * Example usage in a container element:
+     * <pre>{@code
+     * for (Element child : children) {
+     *     context.renderChild(child, frame, childArea);
+     * }
+     * }</pre>
+     *
+     * @param child the child element to render
+     * @param frame the frame to render into
+     * @param area the area allocated for the child
+     */
+    default void renderChild(Element child, Frame frame, Rect area) {
+        child.render(frame, area, this);
     }
 
     /**

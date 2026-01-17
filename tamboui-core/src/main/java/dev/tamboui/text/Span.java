@@ -106,6 +106,14 @@ public final class Span {
         return new Span(content, style.crossedOut());
     }
 
+    public Span hyperlink(String url) {
+        return new Span(content, style.hyperlink(url));
+    }
+
+    public Span hyperlink(String url, String id) {
+        return new Span(content, style.hyperlink(url, id));
+    }
+
     // Color convenience methods
 
     public Span black() {

@@ -12,6 +12,10 @@ import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.widgets.gauge.LineGauge;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * A DSL wrapper for the LineGauge widget.
  * <p>
@@ -21,13 +25,33 @@ import dev.tamboui.widgets.gauge.LineGauge;
  *     .label("Progress: ")
  *     .filledColor(Color.GREEN)
  * }</pre>
+ *
+ * <h2>CSS Child Selectors</h2>
+ * <p>
+ * The following child selectors can be used to style sub-components:
+ * <ul>
+ *   <li>{@code LineGaugeElement-filled} - The filled portion of the gauge</li>
+ *   <li>{@code LineGaugeElement-unfilled} - The unfilled portion of the gauge</li>
+ * </ul>
+ * <p>
+ * Example CSS:
+ * <pre>{@code
+ * LineGaugeElement-filled { color: green; }
+ * LineGaugeElement-unfilled { color: gray; }
+ * }</pre>
+ * <p>
+ * Note: Programmatic styles set via {@link #filledStyle(Style)} or {@link #unfilledStyle(Style)}
+ * take precedence over CSS styles.
  */
 public final class LineGaugeElement extends StyledElement<LineGaugeElement> {
 
+    private static final Style DEFAULT_FILLED_STYLE = Style.EMPTY;
+    private static final Style DEFAULT_UNFILLED_STYLE = Style.EMPTY;
+
     private double ratio = 0.0;
     private String label;
-    private Style filledStyle = Style.EMPTY;
-    private Style unfilledStyle = Style.EMPTY;
+    private Style filledStyle;
+    private Style unfilledStyle;
     private LineGauge.LineSet lineSet = LineGauge.NORMAL;
 
     public LineGaugeElement() {
@@ -122,16 +146,29 @@ public final class LineGaugeElement extends StyledElement<LineGaugeElement> {
     }
 
     @Override
+    public Map<String, String> styleAttributes() {
+        Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
+        if (label != null) {
+            attrs.put("label", label);
+        }
+        return Collections.unmodifiableMap(attrs);
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;
         }
 
+        // Resolve styles with priority: explicit > CSS > default
+        Style effectiveFilledStyle = resolveEffectiveStyle(context, "filled", filledStyle, DEFAULT_FILLED_STYLE);
+        Style effectiveUnfilledStyle = resolveEffectiveStyle(context, "unfilled", unfilledStyle, DEFAULT_UNFILLED_STYLE);
+
         LineGauge.Builder builder = LineGauge.builder()
             .ratio(ratio)
             .style(context.currentStyle())
-            .filledStyle(filledStyle)
-            .unfilledStyle(unfilledStyle)
+            .filledStyle(effectiveFilledStyle)
+            .unfilledStyle(effectiveUnfilledStyle)
             .lineSet(lineSet);
 
         if (label != null) {

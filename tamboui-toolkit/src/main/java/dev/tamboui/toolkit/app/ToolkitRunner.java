@@ -19,6 +19,13 @@ import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.TickEvent;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.time.Duration;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -54,16 +61,38 @@ import java.util.function.Supplier;
  */
 public final class ToolkitRunner implements AutoCloseable {
 
+    private static final PrintStream NULL_OUTPUT = new PrintStream(new OutputStream() {
+        @Override
+        public void write(int b) {
+            // Discard all output
+        }
+    });
+
     private final TuiRunner tuiRunner;
     private final FocusManager focusManager;
     private final EventRouter eventRouter;
     private final DefaultRenderContext renderContext;
+    private final ScheduledExecutorService scheduler;
+    private final boolean faultTolerant;
+    private final PrintStream errorOutput;
 
-    private ToolkitRunner(TuiRunner tuiRunner) {
+    private ToolkitRunner(TuiRunner tuiRunner, boolean faultTolerant, PrintStream errorOutput) {
         this.tuiRunner = tuiRunner;
         this.focusManager = new FocusManager();
         this.eventRouter = new EventRouter(focusManager);
         this.renderContext = new DefaultRenderContext(focusManager, eventRouter);
+        this.renderContext.setFaultTolerant(faultTolerant);
+        this.scheduler = new ScheduledThreadPoolExecutor(1, r -> {
+            Thread t = new Thread(r, "toolkit-scheduler");
+            t.setDaemon(true);
+            return t;
+        });
+        this.faultTolerant = faultTolerant;
+        this.errorOutput = errorOutput;
+    }
+
+    private ToolkitRunner(TuiRunner tuiRunner) {
+        this(tuiRunner, false, NULL_OUTPUT);
     }
 
     /**
@@ -94,6 +123,10 @@ public final class ToolkitRunner implements AutoCloseable {
      * <p>
      * Events are routed to elements based on their handlers.
      * Press 'q' or Ctrl+C to quit (when no element consumes the event).
+     * <p>
+     * If fault-tolerant rendering is enabled (via builder), individual element
+     * render failures are caught and replaced with error placeholders, allowing
+     * the rest of the UI to continue rendering.
      *
      * @param elementSupplier provides the root element for each render
      * @throws Exception if an error occurs during execution
@@ -123,8 +156,17 @@ public final class ToolkitRunner implements AutoCloseable {
         );
     }
 
+    /**
+     * Returns whether fault-tolerant rendering is enabled.
+     *
+     * @return true if fault-tolerant rendering is enabled
+     */
+    public boolean isFaultTolerant() {
+        return faultTolerant;
+    }
+
     private boolean handleEvent(Event event) {
-        // Tick events always trigger a redraw for animations
+        // Tick events trigger a redraw for animations
         if (event instanceof TickEvent) {
             return true;
         }
@@ -158,6 +200,109 @@ public final class ToolkitRunner implements AutoCloseable {
      */
     public boolean isRunning() {
         return tuiRunner.isRunning();
+    }
+
+    /**
+     * Schedules an action to run after a delay.
+     * <p>
+     * The action runs on a background thread. If the action modifies shared state,
+     * ensure proper synchronization. The UI will automatically redraw on the next
+     * tick event after the action completes.
+     *
+     * <pre>{@code
+     * runner.schedule(() -> {
+     *     message = "Delayed message!";
+     * }, Duration.ofSeconds(2));
+     * }</pre>
+     *
+     * @param action the action to run
+     * @param delay the delay before running
+     * @return a handle that can be used to cancel the scheduled action
+     */
+    public ScheduledAction schedule(Runnable action, Duration delay) {
+        ScheduledFuture<?> future = scheduler.schedule(action, delay.toMillis(), TimeUnit.MILLISECONDS);
+        return new ScheduledAction(future);
+    }
+
+    /**
+     * Schedules an action to run repeatedly at a fixed interval.
+     * <p>
+     * The action runs on a background thread. If the action modifies shared state,
+     * ensure proper synchronization. The UI will automatically redraw on each
+     * tick event.
+     *
+     * <pre>{@code
+     * var repeating = runner.scheduleRepeating(() -> {
+     *     counter++;
+     * }, Duration.ofMillis(100));
+     *
+     * // Later, to stop:
+     * repeating.cancel();
+     * }</pre>
+     *
+     * @param action the action to run
+     * @param interval the interval between runs
+     * @return a handle that can be used to cancel the scheduled action
+     */
+    public ScheduledAction scheduleRepeating(Runnable action, Duration interval) {
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
+                action, interval.toMillis(), interval.toMillis(), TimeUnit.MILLISECONDS);
+        return new ScheduledAction(future);
+    }
+
+    /**
+     * Schedules an action to run repeatedly with a fixed delay between runs.
+     * <p>
+     * Unlike {@link #scheduleRepeating}, this waits for each execution to complete
+     * before scheduling the next one. This is useful when the action's duration
+     * is unpredictable and you want consistent spacing between runs.
+     *
+     * @param action the action to run
+     * @param delay the delay between the end of one run and the start of the next
+     * @return a handle that can be used to cancel the scheduled action
+     */
+    public ScheduledAction scheduleWithFixedDelay(Runnable action, Duration delay) {
+        ScheduledFuture<?> future = scheduler.scheduleWithFixedDelay(
+                action, delay.toMillis(), delay.toMillis(), TimeUnit.MILLISECONDS);
+        return new ScheduledAction(future);
+    }
+
+    /**
+     * A handle to a scheduled action that can be cancelled.
+     */
+    public static final class ScheduledAction {
+        private final ScheduledFuture<?> future;
+
+        ScheduledAction(ScheduledFuture<?> future) {
+            this.future = future;
+        }
+
+        /**
+         * Cancels the scheduled action.
+         * <p>
+         * If the action is currently running, it will complete but won't
+         * run again (for repeating actions).
+         */
+        public void cancel() {
+            future.cancel(false);
+        }
+
+        /**
+         * Returns whether this action has been cancelled.
+         */
+        public boolean isCancelled() {
+            return future.isCancelled();
+        }
+
+        /**
+         * Returns whether this action has completed.
+         * <p>
+         * For repeating actions, this only returns true if the action
+         * was cancelled or encountered an error.
+         */
+        public boolean isDone() {
+            return future.isDone();
+        }
     }
 
     /**
@@ -196,6 +341,7 @@ public final class ToolkitRunner implements AutoCloseable {
 
     @Override
     public void close() {
+        scheduler.shutdownNow();
         tuiRunner.close();
     }
 
@@ -234,6 +380,8 @@ public final class ToolkitRunner implements AutoCloseable {
         private StyleEngine styleEngine;
         private Object app;
         private boolean autoBindingRegistration;
+        private boolean faultTolerant;
+        private PrintStream errorOutput = NULL_OUTPUT;
 
         private Builder() {
         }
@@ -299,13 +447,45 @@ public final class ToolkitRunner implements AutoCloseable {
         }
 
         /**
+         * Enables or disables fault-tolerant rendering.
+         * <p>
+         * When enabled, individual element render failures are caught and
+         * replaced with error placeholders, allowing the rest of the UI to
+         * continue rendering. When disabled (default), render exceptions
+         * propagate to the TuiRunner's error handler.
+         *
+         * @param enabled true to enable fault-tolerant rendering
+         * @return this builder
+         */
+        public Builder faultTolerant(boolean enabled) {
+            this.faultTolerant = enabled;
+            return this;
+        }
+
+        /**
+         * Sets the output stream for error logging.
+         * <p>
+         * Defaults to a null output stream that discards all output.
+         * In fault-tolerant mode, errors are displayed via placeholders
+         * rather than logged to avoid flooding the terminal.
+         *
+         * @param errorOutput the error output stream, or null to discard output
+         * @return this builder
+         */
+        public Builder errorOutput(PrintStream errorOutput) {
+            this.errorOutput = errorOutput != null ? errorOutput : NULL_OUTPUT;
+            return this;
+        }
+
+        /**
          * Builds and returns a configured ToolkitRunner.
          *
          * @return a new ToolkitRunner
          * @throws Exception if terminal initialization fails
          */
         public ToolkitRunner build() throws Exception {
-            ToolkitRunner runner = ToolkitRunner.create(config);
+            TuiRunner tuiRunner = TuiRunner.create(config);
+            ToolkitRunner runner = new ToolkitRunner(tuiRunner, faultTolerant, errorOutput);
 
             // Set bindings on render context for Component auto-registration
             runner.renderContext.setBindings(bindings);

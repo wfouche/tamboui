@@ -38,6 +38,7 @@ import java.io.IOException;
  * - Titles (top and bottom)
  * - Padding
  * - Different border combinations
+ * - Hyperlinks in titles
  */
 public class BlockDemo {
 
@@ -270,16 +271,25 @@ public class BlockDemo {
             .build();
         frame.renderWidget(paddedContent, padded.inner(rows.get(0)));
 
-        // Block with top and bottom titles
+        // Block with top and bottom titles (with hyperlinks)
         Block titled = Block.builder()
             .borders(Borders.ALL)
             .borderType(BorderType.ROUNDED)
             .borderStyle(Style.EMPTY.fg(Color.YELLOW))
             .title(Title.from(
-                Line.from(Span.raw("Top Title").bold().yellow())
+                Line.from(
+                    Span.raw("TamboUI ").bold().yellow(),
+                    Span.raw("Docs").hyperlink("https://tamboui.dev").underlined().cyan()
+                )
             ).centered())
             .titleBottom(Title.from(
-                Line.from(Span.raw("Bottom Title").dim())
+                Line.from(
+                    Span.raw("GitHub: ").dim(),
+                    Span.raw("tamboui/tamboui")
+                        .hyperlink("https://github.com/tamboui/tamboui")
+                        .underlined()
+                        .blue()
+                )
             ).right())
             .build();
         frame.renderWidget(titled, rows.get(1));
@@ -287,8 +297,8 @@ public class BlockDemo {
         Paragraph titledContent = Paragraph.builder()
             .text(Text.from(
                 Line.from("This block has both"),
-                Line.from("a top title and"),
-                Line.from("a bottom title.")
+                Line.from("a top title with hyperlink"),
+                Line.from("and a bottom title with hyperlink.")
             ))
             .block(Block.empty())
             .build();

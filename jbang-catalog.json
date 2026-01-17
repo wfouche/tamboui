@@ -4,14 +4,41 @@
       "script-ref": ".jbang/tambouiDemos.java",
       "description": "Run TamboUI demos interactively"
     },
+    "error-handling-demo": {
+      "script-ref": "demos/error-handling-demo/src/main/java/dev/tamboui/demo/errorhandling/ErrorHandlingDemo.java"
+    },
+    "fakodex-demo": {
+      "script-ref": "demos/fakodex-demo/src/main/java/dev/tamboui/demo/coding/CodingAssistantDemo.java"
+    },
+    "filemanager-demo": {
+      "script-ref": "demos/filemanager-demo/src/main/java/dev/tamboui/demo/filemanager/FileManagerDemo.java"
+    },
+    "flex-demo": {
+      "script-ref": "demos/flex-demo/src/main/java/dev/tamboui/demo/flex/FlexDemo.java"
+    },
+    "form-table-demo": {
+      "script-ref": "demos/form-table-demo/src/main/java/dev/tamboui/demo/layout/FormTableDemo.java"
+    },
+    "inline-progress-demo": {
+      "script-ref": "demos/inline-progress-demo/src/main/java/dev/tamboui/demo/InlineProgressDemo.java"
+    },
+    "listelement-demo": {
+      "script-ref": "demos/listelement-demo/src/main/java/dev/tamboui/demo/ListElementDemo.java"
+    },
     "modular-demo": {
       "script-ref": "demos/modular-demo/src/main/java/dev/tamboui/demo/modular/ModularDemo.java"
+    },
+    "rflex-demo": {
+      "script-ref": "demos/rflex-demo/src/main/java/dev/tamboui/demo/flex/RFlexDemo.java"
     },
     "css-demo": {
       "script-ref": "tamboui-css/demos/css-demo/src/main/java/dev/tamboui/demo/CssDemo.java"
     },
     "css-no-toolkit-demo": {
       "script-ref": "tamboui-css/demos/css-no-toolkit-demo/src/main/java/dev/tamboui/demo/CssNoToolkitDemo.java"
+    },
+    "image-demo": {
+      "script-ref": "tamboui-image/demos/image-demo/src/main/java/dev/tamboui/demo/ImageDemo.java"
     },
     "picocli-demo": {
       "script-ref": "tamboui-picocli/demos/picocli-demo/src/main/java/dev/tamboui/demo/PicoCLIDemo.java"
@@ -28,11 +55,11 @@
     "custom-component-demo": {
       "script-ref": "tamboui-toolkit/demos/custom-component-demo/src/main/java/dev/tamboui/demo/CustomComponentDemo.java"
     },
-    "filemanager-demo": {
-      "script-ref": "tamboui-toolkit/demos/filemanager-demo/src/main/java/dev/tamboui/demo/filemanager/FileManagerDemo.java"
-    },
     "jtop-demo": {
       "script-ref": "tamboui-toolkit/demos/jtop-demo/src/main/java/dev/tamboui/demo/JTopDemo.java"
+    },
+    "newyear-demo": {
+      "script-ref": "tamboui-toolkit/demos/newyear-demo/src/main/java/dev/tamboui/demo/NewYearDemo.java"
     },
     "textarea-demo": {
       "script-ref": "tamboui-toolkit/demos/textarea-demo/src/main/java/dev/tamboui/demo/TextAreaDemo.java"
@@ -41,7 +68,7 @@
       "script-ref": "tamboui-toolkit/demos/toolkit-demo/src/main/java/dev/tamboui/demo/ToolkitDemo.java"
     },
     "helloworld-demo": {
-      "script-ref": "tamboui-tui/demos/helloworld-demo/src/main/java/dev/tamboui/demo/HelloWorld.java"
+      "script-ref": "tamboui-tui/demos/helloworld-demo/src/main/java/dev/tamboui/demo/HelloWorldDemo.java"
     },
     "logo-demo": {
       "script-ref": "tamboui-tui/demos/logo-demo/src/main/java/dev/tamboui/demo/LogoDemo.java"
@@ -99,6 +126,9 @@
     },
     "todo-list-demo": {
       "script-ref": "tamboui-widgets/demos/todo-list-demo/src/main/java/dev/tamboui/demo/TodoListDemo.java"
+    },
+    "wavetext-demo": {
+      "script-ref": "tamboui-widgets/demos/wavetext-demo/src/main/java/dev/tamboui/demo/WaveTextDemo.java"
     }
   }
 }

@@ -131,6 +131,15 @@ public interface Constraint {
             return denominator;
         }
 
+        /**
+         * Converts this ratio to a Fraction for exact arithmetic.
+         *
+         * @return a Fraction representing this ratio
+         */
+        public Fraction toFraction() {
+            return Fraction.of(numerator, denominator);
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -247,6 +256,34 @@ public interface Constraint {
     }
 
     /**
+     * Fit to content size.
+     * <p>
+     * When used, the container will query the element for its preferred size
+     * (via {@code preferredWidth()} or {@code preferredHeight()}).
+     */
+    final class Fit implements Constraint {
+        private static final Fit INSTANCE = new Fit();
+
+        private Fit() {
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Fit;
+        }
+
+        @Override
+        public int hashCode() {
+            return Fit.class.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return "Fit";
+        }
+    }
+
+    /**
      * Fill remaining space with given weight.
      */
     final class Fill implements Constraint {
@@ -255,11 +292,11 @@ public interface Constraint {
         /**
          * Creates a fill constraint.
          *
-         * @param weight weight for distributing remaining space (>=1)
+         * @param weight weight for distributing remaining space (>=0)
          */
         public Fill(int weight) {
-            if (weight < 1) {
-                throw new IllegalArgumentException("Fill weight must be at least 1: " + weight);
+            if (weight < 0) {
+                throw new IllegalArgumentException("Fill weight must be non-negative: " + weight);
             }
             this.weight = weight;
         }
@@ -367,5 +404,16 @@ public interface Constraint {
      */
     static Constraint fill() {
         return new Fill(1);
+    }
+
+    /**
+     * Creates a fit-to-content constraint.
+     * <p>
+     * The container will query the element for its preferred size.
+     *
+     * @return fit constraint
+     */
+    static Constraint fit() {
+        return Fit.INSTANCE;
     }
 }

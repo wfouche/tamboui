@@ -19,6 +19,10 @@ import dev.tamboui.widgets.block.Title;
 import dev.tamboui.widgets.input.TextArea;
 import dev.tamboui.widgets.input.TextAreaState;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * A DSL wrapper for the TextArea widget.
  * <p>
@@ -30,20 +34,42 @@ import dev.tamboui.widgets.input.TextAreaState;
  *     .showLineNumbers()
  *     .rounded()
  * }</pre>
+ *
+ * <h2>CSS Child Selectors</h2>
+ * <p>
+ * The following child selectors can be used to style sub-components:
+ * <ul>
+ *   <li>{@code TextAreaElement-cursor} - The cursor style (default: reversed)</li>
+ *   <li>{@code TextAreaElement-placeholder} - The placeholder text style (default: dim)</li>
+ *   <li>{@code TextAreaElement-line-number} - The line number style (default: dim)</li>
+ * </ul>
+ * <p>
+ * Example CSS:
+ * <pre>{@code
+ * TextAreaElement-cursor { text-style: reversed; background: cyan; }
+ * TextAreaElement-placeholder { color: gray; text-style: italic; }
+ * TextAreaElement-line-number { color: #666666; }
+ * }</pre>
+ * <p>
+ * Note: Programmatic styles set via the corresponding setter methods take precedence over CSS styles.
  */
 public final class TextAreaElement extends StyledElement<TextAreaElement> {
 
+    private static final Style DEFAULT_CURSOR_STYLE = Style.EMPTY.reversed();
+    private static final Style DEFAULT_PLACEHOLDER_STYLE = Style.EMPTY.dim();
+    private static final Style DEFAULT_LINE_NUMBER_STYLE = Style.EMPTY.dim();
+
     private TextAreaState state;
-    private Style cursorStyle = Style.EMPTY.reversed();
+    private Style cursorStyle;
     private String placeholder = "";
-    private Style placeholderStyle = Style.EMPTY.dim();
+    private Style placeholderStyle;
     private String title;
     private BorderType borderType;
     private Color borderColor;
     private Color focusedBorderColor;
     private boolean showCursor = true;
     private boolean showLineNumbers = false;
-    private Style lineNumberStyle = Style.EMPTY.dim();
+    private Style lineNumberStyle;
     private TextChangeListener changeListener;
 
     public TextAreaElement() {
@@ -182,15 +208,31 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
         return true;
     }
 
+    @Override
+    public Map<String, String> styleAttributes() {
+        Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
+        if (title != null) {
+            attrs.put("title", title);
+        }
+        if (placeholder != null && !placeholder.isEmpty()) {
+            attrs.put("placeholder", placeholder);
+        }
+        return Collections.unmodifiableMap(attrs);
+    }
+
     /**
      * Handles a key event for text area input.
+     * <p>
+     * Note: The {@code focused} parameter is informational only.
+     * If the event reached this element, it should be processed.
      */
     @Override
     public EventResult handleKeyEvent(KeyEvent event, boolean focused) {
+        // Text input requires focus - only handle events when focused
+        // to avoid multiple text areas in the same container all receiving input
         if (!focused) {
             return EventResult.UNHANDLED;
         }
-
         boolean handled = handleTextAreaKey(state, event);
         if (handled && changeListener != null) {
             changeListener.onTextChange(state.text());
@@ -234,6 +276,10 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
                 state.insert("    "); // 4 spaces for tab
                 return true;
             case CHAR:
+                // Don't consume characters with Ctrl or Alt modifiers - those are control sequences
+                if (event.modifiers().ctrl() || event.modifiers().alt()) {
+                    return false;
+                }
                 char c = event.character();
                 if (c >= 32 && c < 127) {
                     state.insert(c);
@@ -253,20 +299,27 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
 
         boolean isFocused = elementId != null && context.isFocused(elementId);
 
+        // Resolve styles with priority: explicit > CSS > default
+        Style effectiveCursorStyle = resolveEffectiveStyle(context, "cursor", cursorStyle, DEFAULT_CURSOR_STYLE);
+        Style effectivePlaceholderStyle = resolveEffectiveStyle(context, "placeholder", placeholderStyle, DEFAULT_PLACEHOLDER_STYLE);
+        Style effectiveLineNumberStyle = resolveEffectiveStyle(context, "line-number", lineNumberStyle, DEFAULT_LINE_NUMBER_STYLE);
+
         TextArea.Builder builder = TextArea.builder()
             .style(context.currentStyle())
-            .cursorStyle(cursorStyle)
+            .cursorStyle(effectiveCursorStyle)
             .placeholder(placeholder)
-            .placeholderStyle(placeholderStyle)
+            .placeholderStyle(effectivePlaceholderStyle)
             .showLineNumbers(showLineNumbers)
-            .lineNumberStyle(lineNumberStyle);
+            .lineNumberStyle(effectiveLineNumberStyle);
 
         Color effectiveBorderColor = isFocused && focusedBorderColor != null
                 ? focusedBorderColor
                 : borderColor;
 
         if (title != null || borderType != null || effectiveBorderColor != null) {
-            Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
+            Block.Builder blockBuilder = Block.builder()
+                    .borders(Borders.ALL)
+                    .styleResolver(styleResolver(context));
             if (title != null) {
                 blockBuilder.title(Title.from(title));
             }
@@ -274,7 +327,7 @@ public final class TextAreaElement extends StyledElement<TextAreaElement> {
                 blockBuilder.borderType(borderType);
             }
             if (effectiveBorderColor != null) {
-                blockBuilder.borderStyle(Style.EMPTY.fg(effectiveBorderColor));
+                blockBuilder.borderColor(effectiveBorderColor);
             }
             builder.block(blockBuilder.build());
         }

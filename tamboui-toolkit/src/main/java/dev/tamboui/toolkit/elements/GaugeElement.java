@@ -16,6 +16,10 @@ import dev.tamboui.widgets.block.Borders;
 import dev.tamboui.widgets.block.Title;
 import dev.tamboui.widgets.gauge.Gauge;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * A DSL wrapper for the Gauge widget.
  * <p>
@@ -26,12 +30,29 @@ import dev.tamboui.widgets.gauge.Gauge;
  *     .gaugeColor(Color.GREEN)
  *     .title("Progress")
  * }</pre>
+ *
+ * <h2>CSS Child Selectors</h2>
+ * <p>
+ * The following child selectors can be used to style sub-components:
+ * <ul>
+ *   <li>{@code GaugeElement-filled} - The filled portion of the gauge</li>
+ * </ul>
+ * <p>
+ * Example CSS:
+ * <pre>{@code
+ * GaugeElement-filled { color: green; }
+ * }</pre>
+ * <p>
+ * Note: Programmatic styles set via {@link #gaugeStyle(Style)} or {@link #gaugeColor(Color)}
+ * take precedence over CSS styles.
  */
 public final class GaugeElement extends StyledElement<GaugeElement> {
 
+    private static final Style DEFAULT_FILLED_STYLE = Style.EMPTY;
+
     private double ratio = 0.0;
     private String label;
-    private Style gaugeStyle = Style.EMPTY;
+    private Style gaugeStyle;
     private boolean useUnicode = true;
     private String title;
     private BorderType borderType;
@@ -121,6 +142,18 @@ public final class GaugeElement extends StyledElement<GaugeElement> {
     }
 
     @Override
+    public Map<String, String> styleAttributes() {
+        Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
+        if (title != null) {
+            attrs.put("title", title);
+        }
+        if (label != null) {
+            attrs.put("label", label);
+        }
+        return Collections.unmodifiableMap(attrs);
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;
@@ -128,11 +161,8 @@ public final class GaugeElement extends StyledElement<GaugeElement> {
 
         Style effectiveStyle = context.currentStyle();
 
-        // Use gaugeStyle if explicitly set, otherwise use the foreground color from CSS
-        Style effectiveGaugeStyle = gaugeStyle;
-        if (effectiveGaugeStyle.equals(Style.EMPTY) && effectiveStyle.fg().isPresent()) {
-            effectiveGaugeStyle = Style.EMPTY.fg(effectiveStyle.fg().get());
-        }
+        // Resolve filled style with priority: explicit > CSS > default
+        Style effectiveGaugeStyle = resolveEffectiveStyle(context, "filled", gaugeStyle, DEFAULT_FILLED_STYLE);
 
         Gauge.Builder builder = Gauge.builder()
             .ratio(ratio)
@@ -145,7 +175,9 @@ public final class GaugeElement extends StyledElement<GaugeElement> {
         }
 
         if (title != null || borderType != null) {
-            Block.Builder blockBuilder = Block.builder().borders(Borders.ALL);
+            Block.Builder blockBuilder = Block.builder()
+                    .borders(Borders.ALL)
+                    .styleResolver(styleResolver(context));
             if (title != null) {
                 blockBuilder.title(Title.from(title));
             }
@@ -153,7 +185,7 @@ public final class GaugeElement extends StyledElement<GaugeElement> {
                 blockBuilder.borderType(borderType);
             }
             if (borderColor != null) {
-                blockBuilder.borderStyle(Style.EMPTY.fg(borderColor));
+                blockBuilder.borderColor(borderColor);
             }
             builder.block(blockBuilder.build());
         }

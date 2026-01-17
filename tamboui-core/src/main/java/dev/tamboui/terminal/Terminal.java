@@ -5,11 +5,12 @@
 package dev.tamboui.terminal;
 
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.buffer.CellUpdate;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
-import dev.tamboui.buffer.CellUpdate;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -22,6 +23,7 @@ import java.util.function.Consumer;
 public final class Terminal<B extends Backend> implements AutoCloseable {
 
     private final B backend;
+    private final OutputStream rawOutput;
     private Buffer currentBuffer;
     private Buffer previousBuffer;
     private boolean hiddenCursor;
@@ -35,11 +37,37 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
     public Terminal(B backend) throws IOException {
         this.backend = backend;
         this.hiddenCursor = false;
+        this.rawOutput = createRawOutputStream(backend);
 
         Size size = backend.size();
         Rect area = Rect.of(size.width(), size.height());
         this.currentBuffer = Buffer.empty(area);
         this.previousBuffer = Buffer.empty(area);
+    }
+
+    private static OutputStream createRawOutputStream(Backend backend) {
+        return new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                backend.writeRaw(new byte[]{(byte) b});
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                if (off == 0 && len == b.length) {
+                    backend.writeRaw(b);
+                } else {
+                    byte[] slice = new byte[len];
+                    System.arraycopy(b, off, slice, 0, len);
+                    backend.writeRaw(slice);
+                }
+            }
+
+            @Override
+            public void flush() throws IOException {
+                backend.flush();
+            }
+        };
     }
 
     /**
@@ -82,7 +110,7 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
         currentBuffer.clear();
 
         // Create frame and render
-        Frame frame = new Frame(currentBuffer);
+        Frame frame = new Frame(currentBuffer, rawOutput);
         renderer.accept(frame);
 
         // Calculate diff and draw

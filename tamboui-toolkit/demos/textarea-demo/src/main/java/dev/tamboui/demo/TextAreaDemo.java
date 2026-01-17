@@ -1,3 +1,5 @@
+//DEPS dev.tamboui:tamboui-toolkit:LATEST
+//DEPS dev.tamboui:tamboui-jline:LATEST
 /*
  * Copyright (c) 2025 TamboUI Contributors
  * SPDX-License-Identifier: MIT
@@ -87,7 +89,7 @@ public class TextAreaDemo implements Element {
     public void run() throws Exception {
         var config = TuiConfig.builder()
             .mouseCapture(true)
-            .tickRate(Duration.ofMillis(100))
+            .noTick()
             .build();
 
         try (var runner = ToolkitRunner.create(config)) {

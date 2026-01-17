@@ -114,7 +114,7 @@ public final class Style {
      * @return a new style instance
      */
     public Style fg(Color color) {
-        return new Style(color, bg, underlineColor, addModifiers, subModifiers);
+        return new Style(color, bg, underlineColor, addModifiers, subModifiers, extensions);
     }
 
     /** Shorthand for {@link #fg(Color)} with {@link Color#BLACK}. */
@@ -171,7 +171,7 @@ public final class Style {
      * @return a new style instance
      */
     public Style bg(Color color) {
-        return new Style(fg, color, underlineColor, addModifiers, subModifiers);
+        return new Style(fg, color, underlineColor, addModifiers, subModifiers, extensions);
     }
 
     /** Shorthand for {@link #bg(Color)} with {@link Color#BLACK}. */
@@ -223,7 +223,7 @@ public final class Style {
      * @return a new style instance
      */
     public Style underlineColor(Color color) {
-        return new Style(fg, bg, color, addModifiers, subModifiers);
+        return new Style(fg, bg, color, addModifiers, subModifiers, extensions);
     }
 
     // Modifier methods
@@ -237,7 +237,7 @@ public final class Style {
         newAdd.add(modifier);
         EnumSet<Modifier> newSub = EnumSet.copyOf(subModifiers);
         newSub.remove(modifier);
-        return new Style(fg, bg, underlineColor, newAdd, newSub);
+        return new Style(fg, bg, underlineColor, newAdd, newSub, extensions);
     }
 
     /**
@@ -249,7 +249,7 @@ public final class Style {
         newAdd.remove(modifier);
         EnumSet<Modifier> newSub = EnumSet.copyOf(subModifiers);
         newSub.add(modifier);
-        return new Style(fg, bg, underlineColor, newAdd, newSub);
+        return new Style(fg, bg, underlineColor, newAdd, newSub, extensions);
     }
 
     /** Enables bold text. */
@@ -330,6 +330,49 @@ public final class Style {
     /** Disables strikethrough. */
     public Style notCrossedOut() {
         return removeModifier(Modifier.CROSSED_OUT);
+    }
+
+    // Hyperlink methods
+
+    /**
+     * Returns a new style with the given hyperlink.
+     *
+     * @param url the URL for the hyperlink
+     * @return a new style instance with the hyperlink
+     */
+    public Style hyperlink(String url) {
+        return withExtension(Hyperlink.class, Hyperlink.of(url));
+    }
+
+    /**
+     * Returns a new style with the given hyperlink and ID.
+     * The ID can be used to group multiple cells into a single link.
+     *
+     * @param url the URL for the hyperlink
+     * @param id the optional ID for grouping cells
+     * @return a new style instance with the hyperlink
+     */
+    public Style hyperlink(String url, String id) {
+        return withExtension(Hyperlink.class, Hyperlink.of(url, id));
+    }
+
+    /**
+     * Returns a new style with the given hyperlink.
+     *
+     * @param hyperlink the hyperlink to attach
+     * @return a new style instance with the hyperlink
+     */
+    public Style hyperlink(Hyperlink hyperlink) {
+        return withExtension(Hyperlink.class, hyperlink);
+    }
+
+    /**
+     * Returns the hyperlink attached to this style, if any.
+     *
+     * @return the hyperlink, or empty if not set
+     */
+    public Optional<Hyperlink> hyperlink() {
+        return extension(Hyperlink.class);
     }
 
     // Extension methods for storing additional properties

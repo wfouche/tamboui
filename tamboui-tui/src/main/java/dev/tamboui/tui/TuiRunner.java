@@ -4,21 +4,41 @@
  */
 package dev.tamboui.tui;
 
+import dev.tamboui.buffer.Buffer;
+import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
+import dev.tamboui.style.Color;
+import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Backend;
 import dev.tamboui.terminal.BackendFactory;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.terminal.Terminal;
+import dev.tamboui.text.Line;
+import dev.tamboui.text.Span;
 import dev.tamboui.tui.bindings.ActionHandler;
+import dev.tamboui.tui.bindings.Actions;
 import dev.tamboui.tui.bindings.Bindings;
 import dev.tamboui.tui.bindings.BindingSets;
+import dev.tamboui.tui.error.ErrorAction;
+import dev.tamboui.tui.error.ErrorContext;
+import dev.tamboui.tui.error.RenderError;
+import dev.tamboui.tui.error.RenderErrorHandler;
 import dev.tamboui.tui.event.Event;
 import dev.tamboui.tui.event.EventParser;
+import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.ResizeEvent;
 import dev.tamboui.tui.event.TickEvent;
+import dev.tamboui.tui.overlay.FpsOverlay;
+import dev.tamboui.widgets.block.Block;
+import dev.tamboui.widgets.block.BorderType;
+import dev.tamboui.widgets.block.Borders;
+import dev.tamboui.widgets.paragraph.Paragraph;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
@@ -28,6 +48,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -63,11 +84,20 @@ public final class TuiRunner implements AutoCloseable {
     private final BlockingQueue<Event> eventQueue;
     private final AtomicBoolean running;
     private final AtomicBoolean cleanedUp;
-    private final ScheduledExecutorService tickScheduler;
+    private final ScheduledExecutorService scheduler;
     private final AtomicLong frameCount;
     private final Thread shutdownHook;
-    private volatile Instant lastTick;
-    private volatile Size lastSize;
+    private final RenderErrorHandler errorHandler;
+    private final PrintStream errorOutput;
+    private final AtomicReference<Instant> lastTick;
+    private final AtomicReference<Size> lastSize;
+    private final AtomicBoolean resizePending;
+    private final AtomicReference<Renderer> activeRenderer;
+    private final Duration effectivePollTimeout;
+    private final FpsOverlay fpsOverlay;
+    private volatile RenderError lastError;
+    private volatile boolean inErrorState;
+    private volatile int errorScroll;
 
     private TuiRunner(Backend backend, Terminal<Backend> terminal, TuiConfig config) {
         this.backend = backend;
@@ -76,42 +106,58 @@ public final class TuiRunner implements AutoCloseable {
         this.eventQueue = new LinkedBlockingQueue<>();
         this.running = new AtomicBoolean(true);
         this.cleanedUp = new AtomicBoolean(false);
+        this.resizePending = new AtomicBoolean(false);
+        this.activeRenderer = new AtomicReference<>();
         this.frameCount = new AtomicLong(0);
-        this.lastTick = Instant.now();
+        this.lastTick = new AtomicReference<>(Instant.now());
+        this.errorHandler = config.errorHandler();
+        this.errorOutput = config.errorOutput();
 
         // Initialize last known size
+        Size initialSize;
         try {
-            Size size = backend.size();
-            this.lastSize = size;
+            initialSize = backend.size();
         } catch (IOException e) {
-            this.lastSize = new Size(80, 24); // Fallback default
+            initialSize = new Size(80, 24); // Fallback default
         }
+        this.lastSize = new AtomicReference<>(initialSize);
 
-        // Set up resize handler
+        // Set up resize handler - just sets the flag, scheduler will handle redraw
         backend.onResize(() -> {
             try {
                 Size newSize = backend.size();
-                if (!newSize.equals(lastSize)) {
-                    lastSize = newSize;
-                    eventQueue.offer(ResizeEvent.of(newSize.width(), newSize.height()));
+                if (!newSize.equals(lastSize.get())) {
+                    lastSize.set(newSize);
+                    resizePending.set(true);
                 }
             } catch (IOException e) {
                 // Ignore resize errors
             }
         });
 
-        // Set up tick scheduler if configured
-        if (config.ticksEnabled()) {
-            this.tickScheduler = new ScheduledThreadPoolExecutor(1, r -> {
-                Thread t = new Thread(r, "tui-tick");
+        // Set up scheduler for ticks and/or resize checks
+        Duration schedulerPeriod = computeSchedulerPeriod(config);
+        if (schedulerPeriod != null) {
+            this.scheduler = new ScheduledThreadPoolExecutor(1, r -> {
+                Thread t = new Thread(r, "tui-scheduler");
                 t.setDaemon(true);
                 return t;
             });
-            long periodMs = config.tickRate().toMillis();
-            tickScheduler.scheduleAtFixedRate(this::generateTick, periodMs, periodMs, TimeUnit.MILLISECONDS);
+            long periodMs = schedulerPeriod.toMillis();
+            scheduler.scheduleAtFixedRate(this::schedulerCallback, periodMs, periodMs, TimeUnit.MILLISECONDS);
         } else {
-            this.tickScheduler = null;
+            this.scheduler = null;
         }
+
+        // Compute effective poll timeout: never longer than tick rate to prevent tick accumulation
+        if (config.ticksEnabled() && config.tickRate().compareTo(config.pollTimeout()) < 0) {
+            this.effectivePollTimeout = config.tickRate();
+        } else {
+            this.effectivePollTimeout = config.pollTimeout();
+        }
+
+        // Create FPS overlay
+        this.fpsOverlay = new FpsOverlay(config.pollTimeout(), config.tickRate());
 
         // Register shutdown hook if enabled
         if (config.shutdownHook()) {
@@ -166,24 +212,203 @@ public final class TuiRunner implements AutoCloseable {
 
     /**
      * Runs the main event loop with the given handler and renderer.
+     * <p>
+     * Exceptions thrown during rendering are caught and handled according to
+     * the configured {@link RenderErrorHandler}. By default, errors are displayed
+     * in the UI and the application waits for user dismissal before quitting.
      *
      * @param handler  the event handler
      * @param renderer the UI renderer
-     * @throws Exception if an error occurs during execution
+     * @throws Exception if an error occurs during execution that cannot be handled
      */
     public void run(EventHandler handler, Renderer renderer) throws Exception {
-        // Initial draw
-        terminal.draw(renderer::render);
+        // Wrap renderer to add FPS overlay
+        Renderer wrappedRenderer = frame -> {
+            fpsOverlay.recordFrame();
+            renderer.render(frame);
+            if (fpsOverlay.isVisible()) {
+                fpsOverlay.render(frame, frame.area());
+            }
+        };
 
-        while (running.get()) {
-            Event event = pollEvent(config.pollTimeout());
+        // Store renderer for scheduler-triggered redraws (e.g., on resize)
+        this.activeRenderer.set(wrappedRenderer);
 
-            if (event != null) {
-                boolean shouldRedraw = handler.handle(event, this);
-                if (shouldRedraw && running.get()) {
-                    terminal.draw(renderer::render);
+        try {
+            // Initial draw
+            safeRender(wrappedRenderer);
+
+            while (running.get()) {
+                if (inErrorState) {
+                    handleErrorModeEvents();
+                    continue;
+                }
+
+                Event event = pollEvent(effectivePollTimeout);
+
+                if (event != null) {
+                    // Handle FPS overlay toggle
+                    if (config.bindings().matches(event, Actions.TOGGLE_FPS_OVERLAY)) {
+                        fpsOverlay.toggle();
+                        safeRender(wrappedRenderer);
+                        continue;
+                    }
+
+                    boolean shouldRedraw;
+                    try {
+                        shouldRedraw = handler.handle(event, this);
+                    } catch (Throwable t) {
+                        handleRenderError(t);
+                        continue;
+                    }
+                    if (shouldRedraw && running.get() && !inErrorState) {
+                        safeRender(wrappedRenderer);
+                    }
                 }
             }
+        } finally {
+            // Ensure cleanup even on unexpected exit
+            // Note: actual cleanup happens in close()
+        }
+    }
+
+    private void safeRender(Renderer renderer) {
+        try {
+            terminal.draw(renderer::render);
+        } catch (Throwable t) {
+            handleRenderError(t);
+        }
+    }
+
+    private void handleRenderError(Throwable t) {
+        lastError = RenderError.from(t);
+        errorScroll = 0;
+
+        ErrorContext context = new ErrorContext() {
+            @Override
+            public PrintStream errorOutput() {
+                return errorOutput;
+            }
+
+            @Override
+            public void quit() {
+                TuiRunner.this.quit();
+            }
+        };
+
+        ErrorAction action = errorHandler.handle(lastError, context);
+
+        switch (action) {
+            case DISPLAY_AND_QUIT:
+                inErrorState = true;
+                renderErrorDisplay();
+                break;
+            case QUIT_IMMEDIATELY:
+                quit();
+                break;
+            case SUPPRESS:
+                // Continue - error was logged by handler
+                break;
+        }
+    }
+
+    private void handleErrorModeEvents() {
+        Event event = pollEvent(config.pollTimeout());
+        if (event == null) {
+            return;
+        }
+
+        if (event instanceof KeyEvent) {
+            KeyEvent keyEvent = (KeyEvent) event;
+
+            // Quit on 'q' or Escape
+            if (keyEvent.isQuit() || keyEvent.code() == KeyCode.ESCAPE) {
+                quit();
+                return;
+            }
+
+            // Scroll handling
+            if (keyEvent.code() == KeyCode.UP || keyEvent.code() == KeyCode.CHAR && keyEvent.character() == 'k') {
+                if (errorScroll > 0) {
+                    errorScroll--;
+                    renderErrorDisplay();
+                }
+            } else if (keyEvent.code() == KeyCode.DOWN || keyEvent.code() == KeyCode.CHAR && keyEvent.character() == 'j') {
+                errorScroll++;
+                renderErrorDisplay();
+            } else if (keyEvent.code() == KeyCode.PAGE_UP) {
+                errorScroll = Math.max(0, errorScroll - 10);
+                renderErrorDisplay();
+            } else if (keyEvent.code() == KeyCode.PAGE_DOWN) {
+                errorScroll += 10;
+                renderErrorDisplay();
+            } else if (keyEvent.code() == KeyCode.HOME) {
+                errorScroll = 0;
+                renderErrorDisplay();
+            }
+        } else if (event instanceof ResizeEvent) {
+            renderErrorDisplay();
+        }
+    }
+
+    private void renderErrorDisplay() {
+        if (lastError == null) {
+            return;
+        }
+
+        try {
+            terminal.draw(frame -> {
+                Rect area = frame.area();
+                Buffer buffer = frame.buffer();
+
+                // Build the error message content
+                List<Line> lines = new ArrayList<Line>();
+                lines.add(Line.from(new Span(lastError.fullExceptionType(), Style.EMPTY.fg(Color.RED).bold())));
+                lines.add(Line.from(Span.raw("")));
+                lines.add(Line.from(new Span("Message: ", Style.EMPTY.bold()), Span.raw(lastError.message())));
+                lines.add(Line.from(Span.raw("")));
+                lines.add(Line.from(new Span("Stack trace:", Style.EMPTY.bold())));
+
+                // Add stack trace lines
+                String[] stackLines = lastError.formattedStackTrace().split("\n");
+                for (String stackLine : stackLines) {
+                    lines.add(Line.from(Span.raw(stackLine)));
+                }
+
+                // Create the block with border
+                Block block = Block.builder()
+                        .title(" ERROR ")
+                        .titleBottom(" Press 'q' to quit, arrows to scroll ")
+                        .borders(Borders.ALL)
+                        .borderType(BorderType.ROUNDED)
+                        .borderColor(Color.RED)
+                        .build();
+
+                // Render the block
+                block.render(area, buffer);
+                Rect inner = block.inner(area);
+
+                if (inner.isEmpty()) {
+                    return;
+                }
+
+                // Calculate visible lines based on scroll
+                int visibleHeight = inner.height();
+                int maxScroll = Math.max(0, lines.size() - visibleHeight);
+                int actualScroll = Math.min(errorScroll, maxScroll);
+                errorScroll = actualScroll;
+
+                // Render visible lines
+                for (int i = 0; i < visibleHeight && (actualScroll + i) < lines.size(); i++) {
+                    Line line = lines.get(actualScroll + i);
+                    buffer.setLine(inner.left(), inner.top() + i, line);
+                }
+            });
+        } catch (IOException e) {
+            // Failed to render error display - write to error output
+            errorOutput.println("Failed to render error display: " + e.getMessage());
+            lastError.cause().printStackTrace(errorOutput);
+            quit();
         }
     }
 
@@ -255,17 +480,61 @@ public final class TuiRunner implements AutoCloseable {
         return backend;
     }
 
-    private void generateTick() {
+    /**
+     * Computes the scheduler period based on tick rate and resize grace period.
+     *
+     * @param config the TUI configuration
+     * @return the scheduler period, or null if no scheduling is needed
+     */
+    private static Duration computeSchedulerPeriod(TuiConfig config) {
+        Duration tickRate = config.tickRate();
+        Duration resizeGrace = config.resizeGracePeriod();
+
+        if (tickRate == null && resizeGrace == null) {
+            return null;
+        }
+        if (tickRate == null) {
+            return resizeGrace;
+        }
+        if (resizeGrace == null) {
+            return tickRate;
+        }
+        // Return the minimum of the two
+        return tickRate.compareTo(resizeGrace) <= 0 ? tickRate : resizeGrace;
+    }
+
+    /**
+     * Scheduler callback that handles both tick events and resize-triggered redraws.
+     * <p>
+     * When a resize is detected, this directly triggers a redraw independent of
+     * the main event loop, ensuring the UI updates even when the loop is blocked.
+     */
+    private void schedulerCallback() {
         if (!running.get()) {
             return;
         }
 
-        Instant now = Instant.now();
-        Duration elapsed = Duration.between(lastTick, now);
-        lastTick = now;
+        // Check for pending resize and trigger redraw directly
+        if (resizePending.getAndSet(false)) {
+            Renderer renderer = activeRenderer.get();
+            if (renderer != null) {
+                try {
+                    terminal.draw(renderer::render);
+                } catch (IOException e) {
+                    // Ignore redraw errors during resize
+                }
+            }
+        }
 
-        long frame = frameCount.incrementAndGet();
-        eventQueue.offer(TickEvent.of(frame, elapsed));
+        // Generate tick event if ticks are enabled
+        if (config.ticksEnabled()) {
+            Instant now = Instant.now();
+            Instant previous = lastTick.getAndSet(now);
+            Duration elapsed = Duration.between(previous, now);
+
+            long frame = frameCount.incrementAndGet();
+            eventQueue.offer(TickEvent.of(frame, elapsed));
+        }
     }
 
     @Override
@@ -281,11 +550,11 @@ public final class TuiRunner implements AutoCloseable {
             }
         }
 
-        // Shutdown tick scheduler
-        if (tickScheduler != null) {
-            tickScheduler.shutdownNow();
+        // Shutdown scheduler
+        if (scheduler != null) {
+            scheduler.shutdownNow();
             try {
-                tickScheduler.awaitTermination(100, TimeUnit.MILLISECONDS);
+                scheduler.awaitTermination(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -497,6 +766,21 @@ public final class TuiRunner implements AutoCloseable {
          */
         public Builder noTick() {
             this.configBuilder.noTick();
+            return this;
+        }
+
+        /**
+         * Sets the resize grace period.
+         * <p>
+         * This defines the maximum time before resize events are processed,
+         * ensuring the UI redraws promptly on terminal resize even when
+         * ticks are disabled or have a long interval.
+         *
+         * @param resizeGracePeriod the grace period, or null to disable automatic resize handling
+         * @return this builder
+         */
+        public Builder resizeGracePeriod(Duration resizeGracePeriod) {
+            this.configBuilder.resizeGracePeriod(resizeGracePeriod);
             return this;
         }
 

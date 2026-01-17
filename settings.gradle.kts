@@ -4,13 +4,16 @@ val modules = listOf(
     "tamboui-core",
     "tamboui-css",
     "tamboui-widgets",
+    "tamboui-image",
     "tamboui-jline",
+    "tamboui-panama-backend",
     "tamboui-tui",
     "tamboui-picocli",
     "tamboui-toolkit",
     "tamboui-annotations",
     "tamboui-processor",
-    "tamboui-tfx"
+    "tamboui-tfx",
+    "docs"
 )
 
 include(*modules.toTypedArray())
