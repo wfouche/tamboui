@@ -198,7 +198,6 @@ public final class Row extends ContainerElement<Row> {
             .split(effectiveArea);
 
         // Render children (skipping spacing areas)
-        // Children self-register for events in their own render() if needed
         int childIndex = 0;
         for (int i = 0; i < areas.size() && childIndex < children.size(); i++) {
             if (effectiveSpacing > 0 && i % 2 == 1) {

@@ -180,7 +180,16 @@ public interface RenderContext {
      * <p>
      * Container elements should use this method instead of calling
      * {@code child.render()} directly. This allows the infrastructure
-     * to handle errors gracefully when fault-tolerant mode is enabled.
+     * to handle errors gracefully when fault-tolerant mode is enabled,
+     * and ensures that all rendered elements are properly registered with
+     * the event router, enabling them to receive key and mouse events.
+     * <p>
+     * Example usage in a container element:
+     * <pre>{@code
+     * for (Element child : children) {
+     *     context.renderChild(child, frame, childArea);
+     * }
+     * }</pre>
      *
      * @param child the child element to render
      * @param frame the frame to render into

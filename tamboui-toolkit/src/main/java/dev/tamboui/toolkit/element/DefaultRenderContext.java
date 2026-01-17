@@ -10,6 +10,7 @@ import dev.tamboui.css.cascade.CssStyleResolver;
 import dev.tamboui.css.engine.StyleEngine;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
+import dev.tamboui.terminal.Frame;
 import dev.tamboui.toolkit.event.EventRouter;
 import dev.tamboui.toolkit.focus.FocusManager;
 import dev.tamboui.terminal.Frame;
@@ -227,6 +228,7 @@ public final class DefaultRenderContext implements RenderContext {
         if (faultTolerant) {
             try {
                 child.render(frame, area, this);
+                registerElement(child, area);
             } catch (Throwable t) {
                 // Render error placeholder instead of the failed child
                 ErrorPlaceholder placeholder = ErrorPlaceholder.from(t, child.id());
@@ -238,6 +240,7 @@ public final class DefaultRenderContext implements RenderContext {
             }
         } else {
             child.render(frame, area, this);
+            registerElement(child, area);
         }
     }
 
