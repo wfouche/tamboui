@@ -8,7 +8,14 @@ import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.PseudoClassState;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -280,19 +287,107 @@ class SelectorTest {
         assertThat(child.toCss()).isEqualTo("Panel > Button");
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Attribute Selectors
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    void attributeSelectorExistsMatchesElementWithAttribute() {
+        AttributeSelector selector = new AttributeSelector("title");
+        Styleable elementWithTitle = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Tree"));
+        Styleable elementWithoutTitle = createStyleable("Panel", null, Collections.<String>emptySet());
+
+        assertThat(selector.matches(elementWithTitle, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isTrue();
+        assertThat(selector.matches(elementWithoutTitle, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isFalse();
+    }
+
+    @Test
+    void attributeSelectorEqualsMatchesExactValue() {
+        AttributeSelector selector = new AttributeSelector("title", AttributeSelector.Operator.EQUALS, "Test Tree");
+        Styleable matchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Tree"));
+        Styleable nonMatchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Other Title"));
+
+        assertThat(selector.matches(matchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isTrue();
+        assertThat(selector.matches(nonMatchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isFalse();
+    }
+
+    @Test
+    void attributeSelectorStartsWithMatchesPrefix() {
+        AttributeSelector selector = new AttributeSelector("title", AttributeSelector.Operator.STARTS_WITH, "Test");
+        Styleable matchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Tree"));
+        Styleable nonMatchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "My Test"));
+
+        assertThat(selector.matches(matchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isTrue();
+        assertThat(selector.matches(nonMatchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isFalse();
+    }
+
+    @Test
+    void attributeSelectorEndsWithMatchesSuffix() {
+        AttributeSelector selector = new AttributeSelector("title", AttributeSelector.Operator.ENDS_WITH, "Output");
+        Styleable matchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Output"));
+        Styleable nonMatchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Output Test"));
+
+        assertThat(selector.matches(matchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isTrue();
+        assertThat(selector.matches(nonMatchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isFalse();
+    }
+
+    @Test
+    void attributeSelectorContainsMatchesSubstring() {
+        AttributeSelector selector = new AttributeSelector("title", AttributeSelector.Operator.CONTAINS, "Tree");
+        Styleable matchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Tree View"));
+        Styleable nonMatchingElement = createStyleableWithAttrs("Panel", null, Collections.<String>emptySet(),
+                Collections.singletonMap("title", "Test Output"));
+
+        assertThat(selector.matches(matchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isTrue();
+        assertThat(selector.matches(nonMatchingElement, PseudoClassState.NONE, Collections.<Styleable>emptyList())).isFalse();
+    }
+
+    @Test
+    void attributeSelectorSpecificity() {
+        AttributeSelector selector = new AttributeSelector("title", AttributeSelector.Operator.EQUALS, "Test");
+        assertThat(selector.specificity()).isEqualTo(10); // Same as class selector
+    }
+
+    @Test
+    void attributeSelectorToCss() {
+        assertThat(new AttributeSelector("title").toCss()).isEqualTo("[title]");
+        assertThat(new AttributeSelector("title", AttributeSelector.Operator.EQUALS, "Test").toCss())
+                .isEqualTo("[title=\"Test\"]");
+        assertThat(new AttributeSelector("title", AttributeSelector.Operator.STARTS_WITH, "Test").toCss())
+                .isEqualTo("[title^=\"Test\"]");
+        assertThat(new AttributeSelector("title", AttributeSelector.Operator.ENDS_WITH, "Test").toCss())
+                .isEqualTo("[title$=\"Test\"]");
+        assertThat(new AttributeSelector("title", AttributeSelector.Operator.CONTAINS, "Test").toCss())
+                .isEqualTo("[title*=\"Test\"]");
+    }
+
     private Styleable createStyleable(String type, String id, Set<String> classes) {
-        return new TestStyleable(type, id, classes);
+        return new TestStyleable(type, id, classes, Collections.<String, String>emptyMap());
+    }
+
+    private Styleable createStyleableWithAttrs(String type, String id, Set<String> classes, Map<String, String> attrs) {
+        return new TestStyleable(type, id, classes, attrs);
     }
 
     private static class TestStyleable implements Styleable {
         private final String type;
         private final String id;
         private final Set<String> classes;
+        private final Map<String, String> attrs;
 
-        TestStyleable(String type, String id, Set<String> classes) {
+        TestStyleable(String type, String id, Set<String> classes, Map<String, String> attrs) {
             this.type = type;
             this.id = id;
             this.classes = classes;
+            this.attrs = attrs;
         }
 
         @Override
@@ -313,6 +408,11 @@ class SelectorTest {
         @Override
         public Optional<Styleable> cssParent() {
             return Optional.empty();
+        }
+
+        @Override
+        public Map<String, String> styleAttributes() {
+            return attrs;
         }
     }
 
