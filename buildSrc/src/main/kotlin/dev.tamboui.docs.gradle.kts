@@ -1,9 +1,12 @@
 import dev.tamboui.build.GenerateDemosGalleryTask
+import dev.tamboui.build.JavadocAggregatorPlugin
 
 plugins {
     id("org.asciidoctor.jvm.convert")
     id("org.ajoberstar.git-publish")
 }
+
+pluginManager.apply(JavadocAggregatorPlugin::class)
 
 repositories {
     mavenCentral()
@@ -58,7 +61,8 @@ val prepareAsciidocSources = tasks.register<Sync>("prepareAsciidocSources") {
 }
 
 tasks.asciidoctor {
-    dependsOn(prepareAsciidocSources, copyCasts)
+    val javadoc = tasks.named<Javadoc>("javadoc")
+    dependsOn(prepareAsciidocSources, copyCasts, javadoc)
 
     setSourceDir(layout.buildDirectory.dir("asciidoc-sources").get().asFile)
     setBaseDir(layout.buildDirectory.dir("asciidoc-sources").get().asFile)
@@ -72,6 +76,10 @@ tasks.asciidoctor {
         // Copy demo cast files from resolved configuration
         from(copyCasts) {
             into("demos")
+        }
+        // Copy javadocs
+        from(javadoc.map { it.destinationDir }) {
+            into("api")
         }
     }
 

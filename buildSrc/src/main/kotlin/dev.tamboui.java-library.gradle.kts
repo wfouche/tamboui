@@ -1,7 +1,10 @@
+import dev.tamboui.build.AggregatedJavadocParticipantPlugin
+
 plugins {
     `java-library`
     id("dev.tamboui.publishing")
 }
+pluginManager.apply(AggregatedJavadocParticipantPlugin::class)
 
 val isIDEASync = providers.systemProperty("idea.sync.active").isPresent
 
