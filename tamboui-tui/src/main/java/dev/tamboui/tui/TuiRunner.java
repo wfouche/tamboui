@@ -24,7 +24,6 @@ import dev.tamboui.tui.error.ErrorContext;
 import dev.tamboui.tui.error.RenderError;
 import dev.tamboui.tui.error.RenderErrorHandler;
 import dev.tamboui.tui.event.Event;
-import dev.tamboui.tui.event.EventParser;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.ResizeEvent;
@@ -33,12 +32,10 @@ import dev.tamboui.tui.overlay.DebugOverlay;
 import dev.tamboui.widgets.block.Block;
 import dev.tamboui.widgets.block.BorderType;
 import dev.tamboui.widgets.block.Borders;
-import dev.tamboui.widgets.paragraph.Paragraph;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.time.Duration;
 import java.time.Instant;
@@ -94,7 +91,7 @@ public final class TuiRunner implements AutoCloseable {
     private final AtomicReference<Size> lastSize;
     private final AtomicBoolean resizePending;
     private final AtomicReference<Renderer> activeRenderer;
-    private final Duration effectivePollTimeout;
+    private final TerminalInputReader inputReader;
     private final DebugOverlay debugOverlay;
     private final List<PostRenderProcessor> postRenderProcessors;
     private volatile RenderError lastError;
@@ -151,12 +148,9 @@ public final class TuiRunner implements AutoCloseable {
             this.scheduler = null;
         }
 
-        // Compute effective poll timeout: never longer than tick rate to prevent tick accumulation
-        if (config.ticksEnabled() && config.tickRate().compareTo(config.pollTimeout()) < 0) {
-            this.effectivePollTimeout = config.tickRate();
-        } else {
-            this.effectivePollTimeout = config.pollTimeout();
-        }
+        // Create and start the input reader thread
+        this.inputReader = new TerminalInputReader(backend, eventQueue, config.bindings(), running, config.pollTimeout());
+        this.inputReader.start();
 
         // Create debug overlay
         this.debugOverlay = new DebugOverlay(backend.getClass().getSimpleName(), config.pollTimeout(), config.tickRate());
@@ -256,7 +250,7 @@ public final class TuiRunner implements AutoCloseable {
                     continue;
                 }
 
-                Event event = pollEvent(effectivePollTimeout);
+                Event event = pollEvent(config.pollTimeout());
                 if (event != null) {
                     // Handle debug overlay toggle
                     if (config.bindings().matches(event, Actions.TOGGLE_DEBUG_OVERLAY)) {
@@ -425,34 +419,59 @@ public final class TuiRunner implements AutoCloseable {
 
     /**
      * Polls for the next event with the specified timeout.
+     * <p>
+     * Events are read from the unified event queue, which receives events
+     * from both the dedicated input reader thread (keyboard/mouse) and
+     * the scheduler thread (ticks/resize).
+     * <p>
+     * Input events (key/mouse) are prioritized over tick events to ensure
+     * UI responsiveness even when rendering is slow.
      *
      * @param timeout the maximum time to wait
      * @return the next event, or null if timeout expires
      */
     public Event pollEvent(Duration timeout) {
-        // Check for keyboard/mouse input first (non-blocking) to ensure responsiveness
-        // even when tick events are queued
         try {
-            Event terminalEvent = EventParser.readEvent(backend, 0, config.bindings());
-            if (terminalEvent != null) {
-                return terminalEvent;
+            // First, check if there are any input events (non-tick) waiting
+            // This ensures keyboard/mouse responsiveness even with slow renders
+            Event event = findInputEvent();
+            if (event != null) {
+                return event;
             }
-        } catch (IOException e) {
-            // Ignore and continue to check queue
-        }
 
-        // Check queue for tick/resize events
-        Event queued = eventQueue.poll();
-        if (queued != null) {
-            return queued;
-        }
-
-        // No events available, wait for terminal input with timeout
-        try {
-            return EventParser.readEvent(backend, (int) timeout.toMillis(), config.bindings());
-        } catch (IOException e) {
+            // No input events, wait for any event
+            return eventQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             return null;
         }
+    }
+
+    /**
+     * Searches the queue for an input event (non-tick), removing and returning it.
+     * This allows input events to jump ahead of queued tick events.
+     */
+    private Event findInputEvent() {
+        // Drain queue to find input events, re-queue ticks
+        List<Event> ticks = new ArrayList<>();
+        Event inputEvent = null;
+
+        Event e;
+        while ((e = eventQueue.poll()) != null) {
+            if (e instanceof TickEvent) {
+                ticks.add(e);
+            } else {
+                inputEvent = e;
+                break;
+            }
+        }
+
+        // Re-queue tick events (they'll be processed later)
+        for (Event tick : ticks) {
+            eventQueue.offer(tick);
+        }
+
+        return inputEvent;
     }
 
     /**
@@ -562,6 +581,11 @@ public final class TuiRunner implements AutoCloseable {
     @Override
     public void close() {
         running.set(false);
+
+        // Stop input reader thread (waits 2x poll timeout for clean exit)
+        if (inputReader != null) {
+            inputReader.stop(config.pollTimeout().toMillis() * 2);
+        }
 
         // Remove shutdown hook if it was registered (prevents it from running during normal close)
         if (shutdownHook != null) {
