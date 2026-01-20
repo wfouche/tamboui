@@ -245,8 +245,8 @@ public final class MarkupParser {
 
             String tagName = tagNameBuilder.toString().toLowerCase().trim();
 
-            if (tagName.isEmpty()) {
-                // Empty tag, treat as text
+            if (tagName.isEmpty() && !isClosing) {
+                // Empty opening tag, treat as text
                 currentText.append(input.substring(tagStart, pos));
                 return;
             }
@@ -278,48 +278,55 @@ public final class MarkupParser {
             // Flush current text with current style
             flushCurrentText();
 
+            // Use first token as the tag name for Tags (for CSS targeting)
+            String primaryTag = tagName.split("\\s+")[0];
+
             // Create a Tags extension for this tag name
-            Style tagStyle = Style.EMPTY.withExtension(Tags.class, Tags.of(tagName));
+            Style tagStyle = Style.EMPTY.withExtension(Tags.class, Tags.of(primaryTag));
 
             // Check for link tag
-            if ("link".equals(tagName) && attribute != null) {
+            if ("link".equals(primaryTag) && attribute != null) {
                 Style linkStyle = currentStyle.hyperlink(attribute).patch(tagStyle);
-                styleStack.push(new StyleEntry(tagName, linkStyle));
+                styleStack.push(new StyleEntry(primaryTag, linkStyle));
                 currentStyle = linkStyle;
                 return;
             }
 
-            // Check built-in styles
-            Style builtInStyle = BUILT_IN_STYLES.get(tagName);
-            if (builtInStyle != null) {
-                Style withTags = builtInStyle.patch(tagStyle);
-                Style newStyle = currentStyle.patch(withTags);
-                styleStack.push(new StyleEntry(tagName, newStyle));
-                currentStyle = newStyle;
-                return;
-            }
-
-            // Check custom resolver
+            // 1. Start with resolver style for primary tag (resolver has priority)
+            Style baseStyle = Style.EMPTY;
+            boolean resolverHandledPrimaryTag = false;
             if (resolver != null) {
-                Style customStyle = resolver.resolve(tagName);
-                if (customStyle != null) {
-                    Style withTags = customStyle.patch(tagStyle);
-                    Style newStyle = currentStyle.patch(withTags);
-                    styleStack.push(new StyleEntry(tagName, newStyle));
-                    currentStyle = newStyle;
-                    return;
+                Style resolved = resolver.resolve(primaryTag);
+                if (resolved != null) {
+                    baseStyle = resolved;
+                    resolverHandledPrimaryTag = true;
                 }
             }
 
-            // Unknown tag - still track it for CSS class targeting, but with no visual style
-            Style newStyle = currentStyle.patch(tagStyle);
-            styleStack.push(new StyleEntry(tagName, newStyle));
+            // 2. Parse compound style spec and patch on top (inline overrides base)
+            // Skip primary tag in parsing only if resolver already handled it
+            String skipToken = resolverHandledPrimaryTag ? primaryTag : null;
+            Style parsedStyle = parseStyleSpec(tagName, skipToken);
+            Style combined = baseStyle.patch(parsedStyle);
+
+            Style withTags = combined.patch(tagStyle);
+            Style newStyle = currentStyle.patch(withTags);
+            styleStack.push(new StyleEntry(primaryTag, newStyle));
             currentStyle = newStyle;
         }
 
         private void handleClosingTag(String tagName) {
             // Flush current text
             flushCurrentText();
+
+            // Implicit close: pop most recent tag
+            if (tagName.isEmpty()) {
+                if (!styleStack.isEmpty()) {
+                    styleStack.pop();
+                    recalculateCurrentStyle();
+                }
+                return;
+            }
 
             // Find matching opening tag
             StyleEntry found = null;
@@ -352,21 +359,7 @@ public final class MarkupParser {
                 }
 
                 // Recalculate current style from remaining stack
-                currentStyle = Style.EMPTY;
-                for (StyleEntry entry : styleStack) {
-                    // Entries are in reverse order (top of stack = most recent)
-                    // We need to apply from bottom to top
-                }
-                // Rebuild style from bottom of stack to top
-                List<StyleEntry> entries = new ArrayList<>(styleStack);
-                Collections.reverse(entries);
-                currentStyle = Style.EMPTY;
-                for (StyleEntry entry : entries) {
-                    currentStyle = entry.style;
-                }
-                if (currentStyle == null) {
-                    currentStyle = Style.EMPTY;
-                }
+                recalculateCurrentStyle();
 
                 // Re-push inner entries
                 while (!toPop.isEmpty()) {
@@ -377,6 +370,78 @@ public final class MarkupParser {
                 }
             }
             // If no matching tag found, ignore the closing tag
+        }
+
+        private void recalculateCurrentStyle() {
+            List<StyleEntry> entries = new ArrayList<>(styleStack);
+            Collections.reverse(entries);
+            currentStyle = Style.EMPTY;
+            for (StyleEntry entry : entries) {
+                currentStyle = entry.style;
+            }
+        }
+
+        private Style parseStyleSpec(String spec, String skipToken) {
+            Style result = Style.EMPTY;
+            String[] tokens = spec.toLowerCase().split("\\s+");
+
+            boolean expectBg = false;
+            boolean skippedFirst = false;
+            for (String token : tokens) {
+                if (token.isEmpty()) {
+                    continue;
+                }
+
+                // Skip the primary tag (first token) - it's handled separately by resolver
+                if (!skippedFirst && skipToken != null && token.equals(skipToken)) {
+                    skippedFirst = true;
+                    continue;
+                }
+
+                if (expectBg) {
+                    Color bg = parseColor(token);
+                    if (bg != null) {
+                        result = result.bg(bg);
+                    }
+                    expectBg = false;
+                    continue;
+                }
+
+                if ("on".equals(token)) {
+                    expectBg = true;
+                    continue;
+                }
+
+                // Check modifiers
+                Style modifier = BUILT_IN_STYLES.get(token);
+                if (modifier != null) {
+                    result = result.patch(modifier);
+                    continue;
+                }
+
+                // Check foreground color
+                Color fg = parseColor(token);
+                if (fg != null) {
+                    result = result.fg(fg);
+                }
+            }
+            return result;
+        }
+
+        private Color parseColor(String name) {
+            switch (name) {
+                case "red": return Color.RED;
+                case "green": return Color.GREEN;
+                case "blue": return Color.BLUE;
+                case "yellow": return Color.YELLOW;
+                case "cyan": return Color.CYAN;
+                case "magenta": return Color.MAGENTA;
+                case "white": return Color.WHITE;
+                case "black": return Color.BLACK;
+                case "gray":
+                case "grey": return Color.GRAY;
+                default: return null;
+            }
         }
 
         private Style getBaseStyle(String tagName) {

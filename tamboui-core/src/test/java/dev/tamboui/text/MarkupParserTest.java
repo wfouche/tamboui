@@ -282,4 +282,210 @@ class MarkupParserTest {
         assertThat(text.lines().get(0).spans().get(1).content()).isEqualTo("bold till end");
         assertThat(text.lines().get(0).spans().get(1).style().addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
     }
+
+    @Test
+    @DisplayName("implicit close pops most recent tag")
+    void implicitClose() {
+        Text text = MarkupParser.parse("[bold]Hello[/] World");
+
+        assertThat(text.lines()).hasSize(1);
+        assertThat(text.lines().get(0).spans()).hasSize(2);
+        assertThat(text.lines().get(0).spans().get(0).content()).isEqualTo("Hello");
+        assertThat(text.lines().get(0).spans().get(0).style().addModifiers())
+            .contains(dev.tamboui.style.Modifier.BOLD);
+        assertThat(text.lines().get(0).spans().get(1).content()).isEqualTo(" World");
+        assertThat(text.lines().get(0).spans().get(1).style().addModifiers())
+            .doesNotContain(dev.tamboui.style.Modifier.BOLD);
+    }
+
+    @Test
+    @DisplayName("compound style with multiple modifiers")
+    void compoundStyleModifiers() {
+        Text text = MarkupParser.parse("[bold italic]styled[/]");
+
+        assertThat(text.lines()).hasSize(1);
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD, dev.tamboui.style.Modifier.ITALIC);
+    }
+
+    @Test
+    @DisplayName("compound style with color and modifier")
+    void compoundStyleColorAndModifier() {
+        Text text = MarkupParser.parse("[bold red]styled[/]");
+
+        assertThat(text.lines()).hasSize(1);
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
+        assertThat(style.fg()).contains(Color.RED);
+    }
+
+    @Test
+    @DisplayName("background color with on keyword")
+    void backgroundColorOnKeyword() {
+        Text text = MarkupParser.parse("[white on blue]highlighted[/]");
+
+        assertThat(text.lines()).hasSize(1);
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.fg()).contains(Color.WHITE);
+        assertThat(style.bg()).contains(Color.BLUE);
+    }
+
+    @Test
+    @DisplayName("compound style preserves Tags for CSS targeting")
+    void compoundStylePreservesTags() {
+        Text text = MarkupParser.parse("[bold red]styled[/]");
+
+        Tags tags = text.lines().get(0).spans().get(0).style()
+            .extension(Tags.class, Tags.empty());
+        assertThat(tags.contains("bold")).isTrue();
+    }
+
+    @Test
+    @DisplayName("nested implicit closes")
+    void nestedImplicitCloses() {
+        Text text = MarkupParser.parse("[red][bold]RB[/][/] plain");
+
+        assertThat(text.lines()).hasSize(1);
+        assertThat(text.lines().get(0).spans()).hasSize(2);
+        Style first = text.lines().get(0).spans().get(0).style();
+        assertThat(first.fg()).contains(Color.RED);
+        assertThat(first.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
+        assertThat(text.lines().get(0).spans().get(1).content()).isEqualTo(" plain");
+    }
+
+    // ===== Edge cases for compound styles with custom tags =====
+
+    @Test
+    @DisplayName("unknown tag as background target is ignored")
+    void unknownTagAsBackgroundIsIgnored() {
+        // [red on foo] - "foo" is not a known color, so no background is set
+        Text text = MarkupParser.parse("[red on foo]text[/]");
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.fg()).contains(Color.RED);
+        assertThat(style.bg()).isEmpty();  // "foo" is not a color
+        // Primary tag is "red" for CSS targeting
+        Tags tags = style.extension(Tags.class, Tags.empty());
+        assertThat(tags.contains("red")).isTrue();
+    }
+
+    @Test
+    @DisplayName("custom tag with background color - primary tag used for CSS")
+    void customTagWithBackgroundColor() {
+        // [foo on red] - "foo" becomes the CSS class, red becomes background
+        Text text = MarkupParser.parse("[foo on red]text[/]");
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.fg()).isEmpty();  // "foo" is not a color
+        assertThat(style.bg()).contains(Color.RED);
+        // Primary tag is "foo" for CSS targeting
+        Tags tags = style.extension(Tags.class, Tags.empty());
+        assertThat(tags.contains("foo")).isTrue();
+    }
+
+    @Test
+    @DisplayName("custom resolver is merged with compound style - inline overrides base")
+    void customResolverMergedWithCompoundStyle() {
+        // Resolver defines "error" as cyan+bold
+        // Compound style adds red background
+        // Result: resolver's style + compound's background (merged)
+        MarkupParser.StyleResolver resolver = tagName -> {
+            if ("error".equals(tagName)) {
+                return Style.EMPTY.fg(Color.CYAN).bold();
+            }
+            return null;
+        };
+
+        Text text = MarkupParser.parse("[error on red]text[/]", resolver);
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        // Resolver's cyan foreground IS applied
+        assertThat(style.fg()).contains(Color.CYAN);
+        // Resolver's bold IS applied
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
+        // Compound's red background IS applied on top
+        assertThat(style.bg()).contains(Color.RED);
+    }
+
+    @Test
+    @DisplayName("custom resolver works for pure custom tag")
+    void customResolverWorksForPureCustomTag() {
+        // When there's no compound parsing, resolver is consulted
+        MarkupParser.StyleResolver resolver = tagName -> {
+            if ("error".equals(tagName)) {
+                return Style.EMPTY.fg(Color.CYAN).bold();
+            }
+            return null;
+        };
+
+        Text text = MarkupParser.parse("[error]text[/]", resolver);
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.fg()).contains(Color.CYAN);
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
+    }
+
+    @Test
+    @DisplayName("resolver can override built-in color")
+    void resolverCanOverrideBuiltInColor() {
+        // Resolver has priority: can redefine what "red" means
+        MarkupParser.StyleResolver resolver = tagName -> {
+            if ("red".equals(tagName)) {
+                return Style.EMPTY.fg(Color.BLUE).italic();  // Redefine "red" as blue+italic
+            }
+            return null;
+        };
+
+        Text text = MarkupParser.parse("[red]text[/]", resolver);
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        // Resolver wins: "red" now means blue foreground
+        assertThat(style.fg()).contains(Color.BLUE);
+        // Resolver's italic IS applied
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.ITALIC);
+    }
+
+    @Test
+    @DisplayName("compound style can override resolver's color")
+    void compoundStyleOverridesResolverColor() {
+        // Resolver defines "error" as cyan foreground
+        // Compound style overrides with yellow foreground
+        // Inline style wins (like CSS)
+        MarkupParser.StyleResolver resolver = tagName -> {
+            if ("error".equals(tagName)) {
+                return Style.EMPTY.fg(Color.CYAN).bold();
+            }
+            return null;
+        };
+
+        Text text = MarkupParser.parse("[error yellow]text[/]", resolver);
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        // Compound's yellow overrides resolver's cyan
+        assertThat(style.fg()).contains(Color.YELLOW);
+        // Resolver's bold is still applied (not overridden)
+        assertThat(style.addModifiers()).contains(dev.tamboui.style.Modifier.BOLD);
+    }
+
+    @Test
+    @DisplayName("compound style adds modifier to resolver style")
+    void compoundStyleAddsModifierToResolverStyle() {
+        // Resolver defines "error" as cyan+bold
+        // Compound adds italic
+        MarkupParser.StyleResolver resolver = tagName -> {
+            if ("error".equals(tagName)) {
+                return Style.EMPTY.fg(Color.CYAN).bold();
+            }
+            return null;
+        };
+
+        Text text = MarkupParser.parse("[error italic]text[/]", resolver);
+
+        Style style = text.lines().get(0).spans().get(0).style();
+        assertThat(style.fg()).contains(Color.CYAN);
+        assertThat(style.addModifiers()).contains(
+            dev.tamboui.style.Modifier.BOLD,
+            dev.tamboui.style.Modifier.ITALIC
+        );
+    }
 }
