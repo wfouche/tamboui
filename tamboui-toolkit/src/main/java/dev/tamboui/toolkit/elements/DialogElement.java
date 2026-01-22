@@ -281,6 +281,44 @@ public final class DialogElement extends ContainerElement<DialogElement> {
     }
 
     @Override
+    public int preferredWidth() {
+        if (fixedWidth != null) {
+            return fixedWidth;
+        }
+
+        // Calculate based on children, title, and minimum
+        int childrenWidth = 0;
+        if (!children.isEmpty()) {
+            Direction effectiveDirection = this.direction != null ? this.direction : Direction.VERTICAL;
+
+            if (effectiveDirection == Direction.HORIZONTAL) {
+                // Horizontal: sum widths of all children
+                for (Element child : children) {
+                    childrenWidth += child.preferredWidth();
+                }
+
+                // Add spacing between children (n-1 spacings)
+                int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+                if (children.size() > 1) {
+                    childrenWidth += effectiveSpacing * (children.size() - 1);
+                }
+            } else {
+                // Vertical: max width of all children
+                for (Element child : children) {
+                    childrenWidth = Math.max(childrenWidth, child.preferredWidth());
+                }
+            }
+        }
+
+        // Calculate title width (same logic as calculateWidth private method)
+        int titleWidth = title != null ? title.length() : 0;
+        int contentWidth = Math.max(Math.max(minWidth, titleWidth), childrenWidth);
+
+        // Add padding (left and right) and borders (2)
+        return contentWidth + padding * 2 + 2;
+    }
+
+    @Override
     public Map<String, String> styleAttributes() {
         Map<String, String> attrs = new LinkedHashMap<>(super.styleAttributes());
         if (title != null) {

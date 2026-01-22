@@ -352,6 +352,50 @@ public final class Panel extends ContainerElement<Panel> {
     }
 
     @Override
+    public int preferredWidth() {
+        Direction effectiveDirection = this.direction != null ? this.direction : Direction.VERTICAL;
+        int childrenWidth = 0;
+
+        if (!children.isEmpty()) {
+            if (effectiveDirection == Direction.HORIZONTAL) {
+                // Horizontal: sum widths of all children
+                for (Element child : children) {
+                    childrenWidth += child.preferredWidth();
+                }
+
+                // Add spacing between children (n-1 spacings)
+                int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+                if (children.size() > 1) {
+                    childrenWidth += effectiveSpacing * (children.size() - 1);
+                }
+            } else {
+                // Vertical: max width of all children
+                for (Element child : children) {
+                    childrenWidth = Math.max(childrenWidth, child.preferredWidth());
+                }
+            }
+        }
+
+        int width = childrenWidth;
+
+        // Add padding width if present
+        if (padding != null) {
+            width += padding.horizontalTotal();
+        }
+
+        // Panel always has borders (2 cells) unless borderType is NONE
+        // Since we can't know CSS borderType here, assume borders are present
+        width += 2;
+
+        // Add margin width if present
+        if (margin != null) {
+            width += margin.left() + margin.right();
+        }
+
+        return width;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (availableWidth <= 0) {
             return 2; // Just borders
