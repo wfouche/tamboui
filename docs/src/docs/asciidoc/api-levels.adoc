@@ -552,6 +552,26 @@ row(
 )
 ----
 
+Control positioning with flex:
+
+[source,java]
+----
+import dev.tamboui.layout.Flex;
+
+row(
+    text("Item 1"),
+    text("Item 2"),
+    text("Item 3")
+).flex(Flex.CENTER)  // Center items horizontally
+
+column(
+    panel("Top"),
+    panel("Bottom")
+).flex(Flex.SPACE_BETWEEN)  // Spread items vertically
+----
+
+See link:styling.html#_flex_layout[Flex Layout] for detailed documentation on all flex modes and usage patterns.
+
 === Styling
 
 Style methods chain naturally:

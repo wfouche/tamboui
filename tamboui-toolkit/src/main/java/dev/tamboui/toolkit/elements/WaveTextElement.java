@@ -211,6 +211,11 @@ public final class WaveTextElement extends StyledElement<WaveTextElement> {
     }
 
     @Override
+    public int preferredWidth() {
+        return text != null ? text.length() : 0;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty() || text == null || text.isEmpty()) {
             return;

@@ -171,6 +171,37 @@ public final class TabsElement extends StyledElement<TabsElement> {
     }
 
     @Override
+    public int preferredWidth() {
+        if (titles.isEmpty()) {
+            return 0;
+        }
+
+        int width = 0;
+
+        // Calculate width of all tab titles
+        for (String title : titles) {
+            width += title.length();
+        }
+
+        // Add padding for each tab
+        int paddingPerTab = paddingLeft.length() + paddingRight.length();
+        width += paddingPerTab * titles.size();
+
+        // Add dividers between tabs (n-1 dividers for n tabs)
+        if (titles.size() > 1) {
+            width += divider.length() * (titles.size() - 1);
+        }
+
+        // Add border width if there's a border
+        if (borderType != null || title != null) {
+            // Borders add 2 cells (left + right)
+            width += 2;
+        }
+
+        return width;
+    }
+
+    @Override
     protected void renderContent(Frame frame, Rect area, RenderContext context) {
         if (area.isEmpty()) {
             return;
