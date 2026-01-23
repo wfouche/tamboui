@@ -103,6 +103,26 @@ public final class Column extends ContainerElement<Column> {
     }
 
     @Override
+    public int preferredWidth() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+
+        // Column stacks children vertically, so width is the maximum child width
+        int maxWidth = 0;
+        for (Element child : children) {
+            maxWidth = Math.max(maxWidth, child.preferredWidth());
+        }
+
+        // Add margin width if present
+        if (margin != null) {
+            maxWidth += margin.left() + margin.right();
+        }
+
+        return maxWidth;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 0;

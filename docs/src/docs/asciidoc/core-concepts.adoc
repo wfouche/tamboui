@@ -140,33 +140,121 @@ Constraints define how space is allocated in layouts:
 
 === Layout
 
-A `Layout` splits an area according to constraints:
+A `Layout` divides a rectangular area into smaller areas based on constraints.
+
+The core operation is `split()`: it takes a `Rect` and returns a `List<Rect>` - one for each constraint. You then render widgets into those rectangles.
+
+[source,java]
+----
+Layout layout = Layout.builder()
+    .direction(Direction.VERTICAL)
+    .constraints(
+        Constraint.length(3),   // First area: 3 cells tall
+        Constraint.fill()       // Second area: takes remaining space
+    )
+    .build();
+
+// Split a 80x24 area into two rectangles
+Rect area = new Rect(0, 0, 80, 24);
+List<Rect> areas = layout.split(area);
+
+// Result:
+// areas.get(0) = Rect(0, 0, 80, 3)   - header area
+// areas.get(1) = Rect(0, 3, 80, 21)  - content area
+----
+
+Complete example with rendering:
 
 [source,java]
 ----
 // Split vertically into header (3 lines) and content (rest)
-List<Rect> areas = Layout.builder()
+Layout layout = Layout.builder()
     .direction(Direction.VERTICAL)
     .constraints(
         Constraint.length(3),
         Constraint.fill()
     )
-    .build()
-    .split(frame.area());
+    .build();
 
+List<Rect> areas = layout.split(frame.area());
 Rect headerArea = areas.get(0);
 Rect contentArea = areas.get(1);
 
+// Render widgets into the split areas
+Paragraph header = new Paragraph("Header Text");
+header.render(headerArea, frame.buffer());
+
+Paragraph content = new Paragraph("Main content goes here...");
+content.render(contentArea, frame.buffer());
+----
+
+Layouts can be nested:
+
+[source,java]
+----
 // Split horizontally with percentages
-List<Rect> columns = Layout.builder()
+Layout horizontalLayout = Layout.builder()
     .direction(Direction.HORIZONTAL)
     .constraints(
         Constraint.percentage(30),
         Constraint.percentage(70)
     )
-    .build()
-    .split(contentArea);
+    .build();
+
+List<Rect> columns = horizontalLayout.split(contentArea);
+
+// Render sidebar and main area
+List sidebar = List.builder()
+    .items("Item 1", "Item 2", "Item 3")
+    .build();
+sidebar.render(columns.get(0), frame.buffer());
+
+Paragraph mainArea = new Paragraph("Main content");
+mainArea.render(columns.get(1), frame.buffer());
 ----
+
+==== Flex Positioning
+
+When layout children don't fill the entire container (e.g., fixed-size elements in a large space), you can control how remaining space is distributed using `Flex`:
+
+[source,java]
+----
+import dev.tamboui.layout.Flex;
+
+// Center three fixed-width buttons in a toolbar
+Layout toolbar = Layout.builder()
+    .direction(Direction.HORIZONTAL)
+    .constraints(
+        Constraint.length(10),  // Button 1
+        Constraint.length(10),  // Button 2
+        Constraint.length(10)   // Button 3
+    )
+    .flex(Flex.CENTER)  // Center the buttons, space on both sides
+    .build();
+
+List<Rect> buttonAreas = toolbar.split(toolbarArea);
+renderButton("Save", buttonAreas.get(0), frame.buffer());
+renderButton("Cancel", buttonAreas.get(1), frame.buffer());
+renderButton("Help", buttonAreas.get(2), frame.buffer());
+
+// Spread menu items across a navigation bar
+Layout navbar = Layout.builder()
+    .direction(Direction.HORIZONTAL)
+    .constraints(
+        Constraint.length(8),   // "File"
+        Constraint.length(8)    // "Edit"
+    )
+    .flex(Flex.SPACE_BETWEEN)  // Push to edges with gap between
+    .build();
+
+List<Rect> menuAreas = navbar.split(navbarArea);
+renderMenuItem("File", menuAreas.get(0), frame.buffer());
+renderMenuItem("Edit", menuAreas.get(1), frame.buffer());
+----
+
+Available flex modes: `START`, `CENTER`, `END`, `SPACE_BETWEEN`, `SPACE_AROUND`, `SPACE_EVENLY`.
+
+See link:styling.html#flex-layout[Flex Layout] in the CSS Styling guide for detailed documentation including CSS usage and practical examples.
 
 === Direction
 

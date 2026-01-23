@@ -590,7 +590,7 @@ These properties control how elements are sized and positioned within their cont
 |`width: 10;` `width: fit;` `width: 25%;`
 
 |`flex`
-|Flex positioning mode
+|Flex positioning mode - see <<flex-layout,Flex Layout>> below for details
 |`flex: center;` `flex: space-between;`
 
 |`spacing`
@@ -639,32 +639,283 @@ The `height` and `width` properties accept constraint values:
 |Ratio (e.g., `width: 1/3;`)
 |===
 
-===== Flex Values
+[[flex-layout]]
+===== Flex Layout
 
-The `flex` property controls how remaining space is distributed:
+Flex layout controls how remaining space is distributed among children in `Row` and `Column` containers. When children don't fill the entire container (e.g., fixed-size elements in a large space), flex determines where they're positioned and how gaps are distributed.
 
-[cols="1,3",options="header"]
+====== Understanding Flex
+
+Think of flex as answering: "What do I do with the extra space?"
+
+* If your children have fixed sizes and don't fill the container, flex positions them
+* Row containers use flex horizontally (left-to-right)
+* Column containers use flex vertically (top-to-bottom)
+* Flex only affects distribution of _remaining_ space after sizing constraints are applied
+
+====== Flex Modes
+
+[cols="1,3,2",options="header"]
 |===
-|Value |Description
+|Value |Description |Use Case
 
 |`start`
-|Position items at the start, remaining space at end
+|Pack items at the start, remaining space at end
+|Left-aligned toolbars, top-aligned menus
 
 |`center`
-|Center items, distribute remaining space on both sides
+|Center items, equal space on both sides
+|Centered dialogs, hero content
 
 |`end`
-|Position items at the end, remaining space at start
+|Pack items at the end, remaining space at start
+|Right-aligned status indicators
 
 |`space-between`
-|Distribute items with space between them
+|First/last items at edges, equal gaps between
+|Navigation bars, spread-out controls
 
 |`space-around`
-|Distribute items with space around each
+|Equal space around each item (half-size at edges)
+|Evenly distributed buttons
 
 |`space-evenly`
-|Distribute items with equal space between and around
+|Equal space everywhere including edges
+|Perfectly balanced layouts
 |===
+
+TIP: Run the interactive `flex-demo` to see all flex modes in action: `./run-demo.sh flex-demo`. Use arrow keys to cycle through modes and number keys (1-4) to switch between examples.
+
+====== Programmatic Usage
+
+Use flex with `Row` and `Column` elements in the Toolkit DSL:
+
+[source,java]
+----
+import dev.tamboui.layout.Flex;
+import static dev.tamboui.toolkit.Toolkit.*;
+
+// Horizontal flex (Row)
+row(
+    panel(() -> text("Left")).rounded().length(10),
+    panel(() -> text("Center")).rounded().length(10),
+    panel(() -> text("Right")).rounded().length(10)
+).flex(Flex.SPACE_BETWEEN)
+
+// Vertical flex (Column)
+column(
+    panel(() -> text("Top")).rounded().length(3),
+    panel(() -> text("Middle")).rounded().length(3),
+    panel(() -> text("Bottom")).rounded().length(3)
+).flex(Flex.CENTER)
+
+// Nested layouts with different flex modes
+column(
+    row(
+        text("Item A").length(8),
+        text("Item B").length(8)
+    ).flex(Flex.START).length(3),
+
+    row(
+        text("Item C").length(8),
+        text("Item D").length(8)
+    ).flex(Flex.END).length(3)
+)
+----
+
+====== CSS Usage
+
+Set flex via the `flex` property:
+
+[source,css]
+----
+/* Center toolbar items */
+.toolbar-row {
+    flex: center;
+}
+
+/* Space out menu items */
+.menu-row {
+    flex: space-between;
+}
+
+/* Pack footer content to the right */
+#footer-row {
+    flex: end;
+}
+
+/* Vertical centering in a column */
+.sidebar-column {
+    flex: center;
+}
+----
+
+[source,java]
+----
+// Elements pick up flex from CSS classes
+row(
+    text("New"),
+    text("Open"),
+    text("Save")
+).cssClass("toolbar-row")
+----
+
+====== Flex vs Fill: Understanding the Difference
+
+This is a common point of confusion. They serve different purposes:
+
+* *`flex`*: Controls _where_ items are positioned in remaining space
+** Only affects positioning of items that don't fill the container
+** Applied to the container (Row/Column)
+** Example: `row(...).flex(Flex.CENTER)`
+
+* *`fill()`*: Controls _how much_ space an item should consume
+** Makes an item grow to take available space
+** Applied to individual children
+** Example: `text("grows").fill()`
+
+[source,java]
+----
+// WITHOUT fill() - flex positions fixed-size items
+row(
+    text("A").length(5),
+    text("B").length(5),
+    text("C").length(5)
+).flex(Flex.SPACE_BETWEEN)  // Items stay 5 wide, spread out
+
+// WITH fill() - item grows, flex has less effect
+row(
+    text("A").length(5),
+    text("B").fill(),          // Takes all remaining space
+    text("C").length(5)
+).flex(Flex.CENTER)            // Only affects tiny leftover gaps
+----
+
+====== Practical Examples
+
+**Centered Dialog**
+
+[source,java]
+----
+column(
+    panel("Confirm",
+        text("Are you sure?"),
+        row(
+            text("[ Yes ]").green(),
+            text("[ No ]").red()
+        ).flex(Flex.SPACE_AROUND).spacing(2)
+    ).rounded().length(10)
+).flex(Flex.CENTER)
+----
+
+**Application Layout**
+
+[source,java]
+----
+column(
+    // Header: left-aligned title
+    row(
+        text("My App").bold(),
+        text("v1.0").dim()
+    ).flex(Flex.START).spacing(2).length(3),
+
+    // Content: fills available space
+    panel(() -> text("Main content...")).fill(),
+
+    // Footer: spread items across
+    row(
+        text("Ready").green(),
+        text("Line 42, Col 15").dim(),
+        text("UTF-8").dim()
+    ).flex(Flex.SPACE_BETWEEN).length(1)
+)
+----
+
+**Toolbar with CSS**
+
+[source,css]
+----
+.toolbar {
+    flex: space-between;
+    spacing: 1;
+}
+
+.toolbar-left {
+    flex: start;
+}
+
+.toolbar-right {
+    flex: end;
+}
+----
+
+[source,java]
+----
+// Main toolbar with items spread across
+row(
+    text("File"),
+    text("Edit"),
+    text("View"),
+    text("Help")
+).cssClass("toolbar")
+
+// Toolbar section with items grouped left
+row(
+    text("New"),
+    text("Open")
+).cssClass("toolbar-left")
+----
+
+====== Flex with Spacing
+
+Flex and spacing work together. Spacing creates fixed gaps between items, then flex distributes any remaining space:
+
+[source,java]
+----
+// spacing=1 creates 1-cell gaps, flex centers the whole group
+row(
+    text("A"),
+    text("B"),
+    text("C")
+).spacing(1).flex(Flex.CENTER)
+----
+
+====== Common Patterns
+
+[source,java]
+----
+// Left-aligned button group
+row(
+    button("Save"),
+    button("Cancel")
+).flex(Flex.START).spacing(1)
+
+// Right-aligned status
+row(
+    text("Ready").green()
+).flex(Flex.END)
+
+// Split layout: title left, controls right
+row(
+    text("Settings").bold().length(20),
+    spacer(),  // Takes remaining space
+    button("OK").length(6),
+    button("Cancel").length(8)
+).flex(Flex.START).spacing(1)
+
+// Perfectly centered modal
+column(
+    spacer(),
+    row(
+        spacer(),
+        panel("Notice",
+            text("Operation completed")
+        ).rounded().length(30),
+        spacer()
+    ),
+    spacer()
+)
+----
 
 ===== Layout Example
 

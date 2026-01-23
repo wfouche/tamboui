@@ -103,6 +103,33 @@ public final class Row extends ContainerElement<Row> {
     }
 
     @Override
+    public int preferredWidth() {
+        if (children.isEmpty()) {
+            return 0;
+        }
+
+        int width = 0;
+
+        // Sum preferred widths of all children
+        for (Element child : children) {
+            width += child.preferredWidth();
+        }
+
+        // Add spacing between children (n-1 spacings)
+        int effectiveSpacing = this.spacing != null ? this.spacing : 0;
+        if (children.size() > 1) {
+            width += effectiveSpacing * (children.size() - 1);
+        }
+
+        // Add margin width if present
+        if (margin != null) {
+            width += margin.left() + margin.right();
+        }
+
+        return width;
+    }
+
+    @Override
     public int preferredHeight(int availableWidth, RenderContext context) {
         if (children.isEmpty() || availableWidth <= 0) {
             return 1;
