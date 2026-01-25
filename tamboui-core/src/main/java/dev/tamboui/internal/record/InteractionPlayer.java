@@ -4,7 +4,9 @@
  */
 package dev.tamboui.internal.record;
 
+import java.nio.charset.StandardCharsets;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -12,7 +14,9 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
-
+import java.nio.file.Paths;
+import dev.tamboui.export.BufferSvgExporter;
+import dev.tamboui.buffer.Buffer;
 /**
  * Plays back scripted interactions for demo recording.
  * Supports VHS tape format (charmbracelet/vhs).
@@ -26,9 +30,11 @@ final class InteractionPlayer {
     private final Deque<Integer> pendingBytes = new ArrayDeque<>();
     private int currentIndex = 0;
     private long waitUntil = 0;
+    private final Buffer buffer;
 
-    InteractionPlayer(List<Interaction> interactions) {
+    InteractionPlayer(List<Interaction> interactions, Buffer buffer) {
         this.interactions = interactions;
+        this.buffer = buffer;
     }
 
     /**
@@ -37,14 +43,14 @@ final class InteractionPlayer {
      * @param path the tape file path
      * @return list of interactions, empty if file doesn't exist or has no interactions
      */
-    static List<Interaction> loadFromFile(Path path) {
+    static List<Interaction> loadFromFile(Path path, Path outputPath) {
         List<Interaction> interactions = new ArrayList<>();
         if (path == null || !Files.exists(path)) {
             return interactions;
         }
 
         try {
-            loadTapeFile(path, interactions);
+            loadTapeFile(path, outputPath, interactions);
         } catch (IOException e) {
             System.err.println("Warning: Failed to load tape file: " + e.getMessage());
         }
@@ -110,7 +116,7 @@ final class InteractionPlayer {
         return result;
     }
 
-    private static void loadTapeFile(Path path, List<Interaction> interactions) throws IOException {
+    private static void loadTapeFile(Path path, Path outputPath, List<Interaction> interactions) throws IOException {
         List<String> lines = Files.readAllLines(path);
         boolean visible = true; // Track Show/Hide state
 
@@ -126,7 +132,7 @@ final class InteractionPlayer {
                 String includePath = line.substring(7).trim();
                 Path includeFile = path.getParent().resolve(includePath);
                 if (Files.exists(includeFile)) {
-                    loadTapeFile(includeFile, interactions);
+                    loadTapeFile(includeFile, outputPath, interactions);
                 }
                 continue;
             }
@@ -156,11 +162,11 @@ final class InteractionPlayer {
                 continue;
             }
 
-            parseVhsCommand(line, interactions);
+            parseVhsCommand(outputPath, line, interactions);
         }
     }
 
-    private static void parseVhsCommand(String line, List<Interaction> interactions) {
+    private static void parseVhsCommand(Path outputPath, String line, List<Interaction> interactions) {
         // Check for timing suffix: Command@duration count
         // e.g., "Right@2.5s 3" means press Right 3 times with 2.5s between each
         String cmd = line;
@@ -192,7 +198,10 @@ final class InteractionPlayer {
             case "sleep":
                 interactions.add(new Interaction.Wait(parseDuration(args)));
                 break;
-
+            case "screenshot":
+                // Resolve screenshot path relative to the .cast file's directory (same folder)
+                interactions.add(new Interaction.Screenshot(outputPath.getParent().resolve(args)));
+                break;
             case "type":
                 // Type "text" - parse quoted string and type each character
                 String text = parseQuotedString(args);
@@ -429,6 +438,16 @@ final class InteractionPlayer {
                 if (!pendingBytes.isEmpty()) {
                     return pendingBytes.poll();
                 }
+            } else if (interaction instanceof Interaction.Screenshot) {
+                Interaction.Screenshot screenshot = (Interaction.Screenshot) interaction;
+                String svg = BufferSvgExporter.exportSvg(buffer);
+                try {
+                    Files.createDirectories(screenshot.path().getParent());
+                    Files.write(screenshot.path(), svg.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Warning: Failed to write screenshot: " + e.getMessage(),e);
+                }
+                return -2; // Timeout to trigger redraw
             }
         }
 
