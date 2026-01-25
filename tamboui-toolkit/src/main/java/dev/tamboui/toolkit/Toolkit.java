@@ -9,6 +9,7 @@ import dev.tamboui.toolkit.elements.BarChartElement;
 import dev.tamboui.toolkit.elements.CalendarElement;
 import dev.tamboui.toolkit.elements.CanvasElement;
 import dev.tamboui.toolkit.elements.ChartElement;
+import dev.tamboui.toolkit.elements.GenericWidgetElement;
 import dev.tamboui.toolkit.elements.Column;
 import dev.tamboui.toolkit.elements.DialogElement;
 import dev.tamboui.toolkit.elements.GaugeElement;
@@ -37,6 +38,7 @@ import dev.tamboui.toolkit.element.StyledElement;
 import dev.tamboui.widgets.input.TextAreaState;
 import dev.tamboui.widgets.input.TextInputState;
 import dev.tamboui.widgets.scrollbar.ScrollbarState;
+import dev.tamboui.widget.Widget;
 import dev.tamboui.tui.event.KeyEvent;
 
 import java.time.LocalDate;
@@ -873,6 +875,33 @@ public final class Toolkit {
      */
     public static ScrollbarElement scrollbar() {
         return new ScrollbarElement();
+    }
+
+    // ==================== Generic Widget ====================
+
+    /**
+     * Wraps any low-level {@link Widget} as a {@link GenericWidgetElement}.
+     * <p>
+     * This is useful when you need to use a widget that doesn't have a dedicated
+     * element wrapper, allowing it to participate in the toolkit's styling and layout system.
+     * <pre>{@code
+     * widget(someWidget)
+     *     .fg(Color.RED)
+     *     .addClass("custom-class")
+     *     .fill()
+     * }</pre>
+     * <p>
+     * Note: The styling applied to this element affects the element itself but may not
+     * propagate to the wrapped widget's internal rendering, as the widget renders directly
+     * to the buffer.
+     *
+     * @param <T> the type of the widget
+     * @param widget the widget to wrap
+     * @return a new generic widget element
+     * @throws IllegalArgumentException if widget is null
+     */
+    public static <T extends Widget> GenericWidgetElement<T> widget(T widget) {
+        return GenericWidgetElement.of(widget);
     }
 
     // ==================== Input Utilities ====================

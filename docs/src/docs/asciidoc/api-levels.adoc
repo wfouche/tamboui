@@ -696,6 +696,39 @@ barChart(10, 20, 30)
     .barColor(Color.BLUE)
 ----
 
+=== Wrapping Low-Level Widgets
+
+If you have a custom widget or a widget that doesn't yet have a dedicated Toolkit element, you can wrap it with `widget()`:
+
+[source,java]
+----
+// Wrap any Widget for use in the Toolkit DSL
+widget(myCustomWidget)
+    .addClass("custom")
+    .fill()
+
+// Use in layouts like any other element
+row(
+    widget(customWidget1).fill(),
+    widget(customWidget2).fill()
+)
+----
+
+This is only useful when:
+
+* You have a custom widget without a dedicated element wrapper
+* You want quick integration of a widget into the Toolkit DSL
+* You need to apply layout constraints, CSS classes, or event handlers to a widget
+
+**Limitations:**
+
+* **Styling does not propagate** - Colors and modifiers set on the element don't affect the widget's internal rendering.
+  The widget renders directly to the buffer using its own styling logic.
+* **No CSS child selectors** - GenericWidgetElement has no sub-components that can be styled via CSS.
+* **No preferred size** - The element doesn't know the widget's size requirements, so the container must specify constraints.
+
+For full styling support, consider creating a dedicated element wrapper for your widget type (see `TextElement` or `GaugeElement` as examples).
+
 === Using ToolkitRunner Directly
 
 `ToolkitApp` is convenient, but `ToolkitRunner` gives more control:
