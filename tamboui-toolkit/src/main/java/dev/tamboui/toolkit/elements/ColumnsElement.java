@@ -19,8 +19,8 @@ import dev.tamboui.style.PropertyRegistry;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.widget.Widget;
-import dev.tamboui.widgets.columns.ColumnOrder;
-import dev.tamboui.widgets.columns.Columns;
+import dev.tamboui.layout.columns.ColumnOrder;
+import dev.tamboui.layout.columns.Columns;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -20,7 +20,7 @@ import dev.tamboui.toolkit.event.EventResult;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
 import dev.tamboui.widget.Widget;
-import dev.tamboui.widgets.dock.Dock;
+import dev.tamboui.layout.dock.Dock;
 
 /**
  * A 5-region dock layout element that arranges children into top, bottom,

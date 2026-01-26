@@ -16,8 +16,8 @@ import dev.tamboui.toolkit.element.ContainerElement;
 import dev.tamboui.toolkit.element.Element;
 import dev.tamboui.toolkit.element.RenderContext;
 import dev.tamboui.widget.Widget;
-import dev.tamboui.widgets.flow.Flow;
-import dev.tamboui.widgets.flow.FlowItem;
+import dev.tamboui.layout.flow.Flow;
+import dev.tamboui.layout.flow.FlowItem;
 
 import java.util.ArrayList;
 import java.util.Arrays;

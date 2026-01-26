@@ -13,6 +13,11 @@ module dev.tamboui.core {
     exports dev.tamboui.terminal;
     exports dev.tamboui.text;
     exports dev.tamboui.util;
+    exports dev.tamboui.layout.columns;
+    exports dev.tamboui.layout.dock;
+    exports dev.tamboui.layout.flow;
+    exports dev.tamboui.layout.grid;
+    exports dev.tamboui.layout.stack;
     exports dev.tamboui.widget;
 
     uses dev.tamboui.terminal.BackendProvider;

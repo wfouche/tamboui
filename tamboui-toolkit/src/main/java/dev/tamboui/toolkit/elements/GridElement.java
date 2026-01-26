@@ -18,7 +18,7 @@ import dev.tamboui.style.PropertyRegistry;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.widget.Widget;
-import dev.tamboui.widgets.grid.Grid;
+import dev.tamboui.layout.grid.Grid;
 
 import java.util.ArrayList;
 import java.util.Arrays;

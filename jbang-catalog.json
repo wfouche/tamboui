@@ -37,6 +37,18 @@
     "unicode-inline-demo": {
       "script-ref": "demos/unicode-inline-demo/src/main/java/dev/tamboui/demo/UnicodeDemo.java"
     },
+    "dock-demo": {
+      "script-ref": "tamboui-core/demos/dock-demo/src/main/java/dev/tamboui/demo/DockDemo.java"
+    },
+    "flow-demo": {
+      "script-ref": "tamboui-core/demos/flow-demo/src/main/java/dev/tamboui/demo/FlowDemo.java"
+    },
+    "grid-demo": {
+      "script-ref": "tamboui-core/demos/grid-demo/src/main/java/dev/tamboui/demo/GridDemo.java"
+    },
+    "stack-demo": {
+      "script-ref": "tamboui-core/demos/stack-demo/src/main/java/dev/tamboui/demo/StackDemo.java"
+    },
     "css-demo": {
       "script-ref": "tamboui-css/demos/css-demo/src/main/java/dev/tamboui/demo/CssDemo.java"
     },
@@ -124,17 +136,8 @@
     "colors-rgb-demo": {
       "script-ref": "tamboui-widgets/demos/colors-rgb-demo/src/main/java/dev/tamboui/demo/ColorsRgbDemo.java"
     },
-    "dock-demo": {
-      "script-ref": "tamboui-widgets/demos/dock-demo/src/main/java/dev/tamboui/demo/DockDemo.java"
-    },
-    "flow-demo": {
-      "script-ref": "tamboui-widgets/demos/flow-demo/src/main/java/dev/tamboui/demo/FlowDemo.java"
-    },
     "gauge-demo": {
       "script-ref": "tamboui-widgets/demos/gauge-demo/src/main/java/dev/tamboui/demo/GaugeDemo.java"
-    },
-    "grid-demo": {
-      "script-ref": "tamboui-widgets/demos/grid-demo/src/main/java/dev/tamboui/demo/GridDemo.java"
     },
     "input-form-demo": {
       "script-ref": "tamboui-widgets/demos/input-form-demo/src/main/java/dev/tamboui/demo/InputFormDemo.java"
@@ -150,9 +153,6 @@
     },
     "sparkline-demo": {
       "script-ref": "tamboui-widgets/demos/sparkline-demo/src/main/java/dev/tamboui/demo/SparklineDemo.java"
-    },
-    "stack-demo": {
-      "script-ref": "tamboui-widgets/demos/stack-demo/src/main/java/dev/tamboui/demo/StackDemo.java"
     },
     "table-demo": {
       "script-ref": "tamboui-widgets/demos/table-demo/src/main/java/dev/tamboui/demo/TableDemo.java"
