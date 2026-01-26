@@ -526,4 +526,27 @@ class CssParserTest {
 
         assertThat(attrSelector.toCss()).isEqualTo("[title]");
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CSS Inheritance Features
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    void parsesInheritKeyword() {
+        Stylesheet stylesheet = CssParser.parse(".child { text-overflow: inherit; }");
+
+        assertThat(stylesheet.rules()).hasSize(1);
+        Rule rule = stylesheet.rules().get(0);
+        PropertyValue pv = rule.declarations().get("text-overflow");
+        assertThat(pv.raw()).isEqualTo("inherit");
+        assertThat(pv.isInherit()).isTrue();
+        assertThat(pv.important()).isFalse();
+    }
+
+    @Test
+    void inheritKeywordToString() {
+        PropertyValue pv = PropertyValue.of("inherit");
+        assertThat(pv.toString()).isEqualTo("inherit");
+        assertThat(pv.isInherit()).isTrue();
+    }
 }

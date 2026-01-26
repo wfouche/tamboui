@@ -14,9 +14,20 @@ import java.util.Objects;
  */
 public final class PropertyValue {
 
+    /**
+     * The keyword used when a child wants to explicitly inherit a value from its parent.
+     */
+    public static final String INHERIT_KEYWORD = "inherit";
+
     private final String raw;
     private final boolean important;
 
+    /**
+     * Creates a property value.
+     *
+     * @param raw       the raw value string
+     * @param important whether the value has !important
+     */
     public PropertyValue(String raw, boolean important) {
         this.raw = Objects.requireNonNull(raw);
         this.important = important;
@@ -50,6 +61,16 @@ public final class PropertyValue {
         return important;
     }
 
+    /**
+     * Returns true if this value is the special "inherit" keyword,
+     * indicating the child wants to explicitly inherit from parent.
+     *
+     * @return true if the raw value is "inherit"
+     */
+    public boolean isInherit() {
+        return INHERIT_KEYWORD.equalsIgnoreCase(raw);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -59,7 +80,8 @@ public final class PropertyValue {
             return false;
         }
         PropertyValue that = (PropertyValue) o;
-        return important == that.important && raw.equals(that.raw);
+        return important == that.important
+                && raw.equals(that.raw);
     }
 
     @Override
@@ -69,6 +91,9 @@ public final class PropertyValue {
 
     @Override
     public String toString() {
-        return important ? raw + " !important" : raw;
+        if (important) {
+            return raw + " !important";
+        }
+        return raw;
     }
 }

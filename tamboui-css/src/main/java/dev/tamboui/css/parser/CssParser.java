@@ -188,7 +188,7 @@ public final class CssParser {
 
         String trimmedValue = value.toString().trim();
         declarations.put(property.value(),
-                important ? PropertyValue.important(trimmedValue) : PropertyValue.of(trimmedValue));
+                new PropertyValue(trimmedValue, important));
     }
 
     private Selector parseSelector() {

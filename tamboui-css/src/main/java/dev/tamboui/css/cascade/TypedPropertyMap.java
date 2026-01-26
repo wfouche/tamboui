@@ -36,6 +36,14 @@ public final class TypedPropertyMap {
     }
 
     /**
+     * Package-private constructor for creating a TypedPropertyMap from a pre-built map.
+     * Used by CssStyleResolver for advanced inheritance scenarios.
+     */
+    TypedPropertyMap(Map<PropertyDefinition<?>, Object> values, boolean packagePrivate) {
+        this.values = Collections.unmodifiableMap(values);
+    }
+
+    /**
      * Returns an empty property map.
      *
      * @return an empty property map
@@ -119,16 +127,24 @@ public final class TypedPropertyMap {
         }
         if (this.isEmpty()) {
             // Only inherit inheritable properties from fallback
-            return filterInheritable(fallback);
+            Map<PropertyDefinition<?>, Object> filtered = new HashMap<>();
+            for (Map.Entry<PropertyDefinition<?>, Object> entry : fallback.values.entrySet()) {
+                if (entry.getKey().isInheritable()) {
+                    filtered.put(entry.getKey(), entry.getValue());
+                }
+            }
+            if (filtered.isEmpty()) {
+                return EMPTY;
+            }
+            return new TypedPropertyMap(Collections.unmodifiableMap(filtered));
         }
 
         Map<PropertyDefinition<?>, Object> merged = new HashMap<>();
 
         // First, add inheritable properties from fallback
         for (Map.Entry<PropertyDefinition<?>, Object> entry : fallback.values.entrySet()) {
-            PropertyDefinition<?> prop = entry.getKey();
-            if (prop.isInheritable()) {
-                merged.put(prop, entry.getValue());
+            if (entry.getKey().isInheritable()) {
+                merged.put(entry.getKey(), entry.getValue());
             }
         }
 
@@ -136,19 +152,6 @@ public final class TypedPropertyMap {
         merged.putAll(this.values);
 
         return new TypedPropertyMap(Collections.unmodifiableMap(merged));
-    }
-
-    private static TypedPropertyMap filterInheritable(TypedPropertyMap source) {
-        Map<PropertyDefinition<?>, Object> filtered = new HashMap<>();
-        for (Map.Entry<PropertyDefinition<?>, Object> entry : source.values.entrySet()) {
-            if (entry.getKey().isInheritable()) {
-                filtered.put(entry.getKey(), entry.getValue());
-            }
-        }
-        if (filtered.isEmpty()) {
-            return EMPTY;
-        }
-        return new TypedPropertyMap(Collections.unmodifiableMap(filtered));
     }
 
     @Override

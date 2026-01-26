@@ -14,6 +14,7 @@ import dev.tamboui.style.Color;
 import dev.tamboui.style.Modifier;
 import dev.tamboui.style.Overflow;
 import dev.tamboui.style.PropertyDefinition;
+import dev.tamboui.style.PropertyRegistry;
 import dev.tamboui.style.StylePropertyResolver;
 import dev.tamboui.style.Style;
 import dev.tamboui.widgets.block.Block;
@@ -23,6 +24,7 @@ import dev.tamboui.layout.Padding;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -43,14 +45,22 @@ import java.util.Set;
  */
 public final class CssStyleResolver implements StylePropertyResolver {
 
-    private static final CssStyleResolver EMPTY = new CssStyleResolver(TypedPropertyMap.empty(), Collections.emptyMap());
+    private static final CssStyleResolver EMPTY = new CssStyleResolver(
+            TypedPropertyMap.empty(),
+            Collections.emptyMap(),
+            Collections.emptySet()
+    );
 
     private final TypedPropertyMap properties;
     private final Map<String, String> rawValues;
+    private final Set<String> inheritedProperties;   // properties set to "inherit"
 
-    private CssStyleResolver(TypedPropertyMap properties, Map<String, String> rawValues) {
+    private CssStyleResolver(TypedPropertyMap properties,
+                             Map<String, String> rawValues,
+                             Set<String> inheritedProperties) {
         this.properties = properties;
         this.rawValues = rawValues;
+        this.inheritedProperties = inheritedProperties;
     }
 
     /**
@@ -361,6 +371,9 @@ public final class CssStyleResolver implements StylePropertyResolver {
      * <p>
      * Per CSS semantics, only certain properties inherit from parent to child.
      * The inheritance behavior is defined per-property in {@link PropertyDefinition#isInheritable()}.
+     * <p>
+     * Additionally, this method handles the {@code inherit} keyword: properties
+     * explicitly requesting parent's value.
      *
      * @param fallback the fallback resolver for missing inheritable properties
      * @return a new resolver with fallback behavior for inheritable properties only
@@ -369,8 +382,62 @@ public final class CssStyleResolver implements StylePropertyResolver {
         if (fallback == null) {
             return this;
         }
-        // Raw values are not inherited - only typed properties with inheritable flag
-        return new CssStyleResolver(properties.withFallback(fallback.properties), this.rawValues);
+
+        // Merge raw values: start with child's own values
+        Map<String, String> mergedRaw = new HashMap<>();
+
+        // Handle explicit "inherit" keyword - copy from parent regardless of inheritability
+        for (String prop : this.inheritedProperties) {
+            if (fallback.rawValues.containsKey(prop)) {
+                mergedRaw.put(prop, fallback.rawValues.get(prop));
+            }
+        }
+
+        // Add child's own raw values (override any inherited)
+        for (Map.Entry<String, String> entry : this.rawValues.entrySet()) {
+            // Skip properties that are set to "inherit" (already handled above from parent)
+            if (!this.inheritedProperties.contains(entry.getKey())) {
+                mergedRaw.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // Use TypedPropertyMap with standard inheritance
+        TypedPropertyMap merged = this.properties.withFallback(fallback.properties);
+
+        // For explicit "inherit" keyword, we need to copy typed properties from parent
+        TypedPropertyMap.Builder inheritBuilder = TypedPropertyMap.builder();
+        for (String prop : this.inheritedProperties) {
+            Optional<PropertyDefinition<?>> propDef = PropertyRegistry.byName(prop);
+            if (propDef.isPresent()) {
+                copyTypedProperty(inheritBuilder, fallback.properties, propDef.get());
+            }
+        }
+        TypedPropertyMap inheritedTyped = inheritBuilder.build();
+
+        // Merge: start with merged (has fallback inheritable), overlay with explicit inherited
+        if (!inheritedTyped.isEmpty()) {
+            Map<PropertyDefinition<?>, Object> finalMerged = new HashMap<>();
+            for (PropertyDefinition<?> p : merged.properties()) {
+                merged.get(p).ifPresent(v -> finalMerged.put(p, v));
+            }
+            for (PropertyDefinition<?> p : inheritedTyped.properties()) {
+                inheritedTyped.get(p).ifPresent(v -> finalMerged.put(p, v));
+            }
+            // Overlay with child's own non-inherited properties
+            for (PropertyDefinition<?> p : this.properties.properties()) {
+                this.properties.get(p).ifPresent(v -> finalMerged.put(p, v));
+            }
+            merged = new TypedPropertyMap(finalMerged, true);
+        }
+
+        return new CssStyleResolver(merged, mergedRaw, Collections.emptySet());
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> void copyTypedProperty(TypedPropertyMap.Builder builder,
+                                       TypedPropertyMap source,
+                                       PropertyDefinition<T> property) {
+        source.get(property).ifPresent(v -> builder.put(property, v));
     }
 
     /**
@@ -389,6 +456,7 @@ public final class CssStyleResolver implements StylePropertyResolver {
         private final TypedPropertyMap.Builder properties = TypedPropertyMap.builder();
         private final Map<String, String> rawValues = new HashMap<>();
         private final Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        private final Set<String> inheritedProperties = new HashSet<>();
 
         private Builder() {
         }
@@ -562,6 +630,23 @@ public final class CssStyleResolver implements StylePropertyResolver {
         }
 
         /**
+         * Marks a property as using the "inherit" keyword.
+         * <p>
+         * This indicates that the child element wants to explicitly inherit
+         * this property's value from its parent, regardless of whether the
+         * property is normally inheritable.
+         *
+         * @param propertyName the CSS property name
+         * @return this builder
+         */
+        public Builder markAsInherited(String propertyName) {
+            if (propertyName != null) {
+                inheritedProperties.add(propertyName);
+            }
+            return this;
+        }
+
+        /**
          * Builds the CssStyleResolver.
          *
          * @return the built resolver
@@ -574,7 +659,10 @@ public final class CssStyleResolver implements StylePropertyResolver {
             Map<String, String> finalRawValues = rawValues.isEmpty()
                     ? Collections.emptyMap()
                     : Collections.unmodifiableMap(new HashMap<>(rawValues));
-            return new CssStyleResolver(properties.build(), finalRawValues);
+            Set<String> finalInherited = inheritedProperties.isEmpty()
+                    ? Collections.emptySet()
+                    : Collections.unmodifiableSet(new HashSet<>(inheritedProperties));
+            return new CssStyleResolver(properties.build(), finalRawValues, finalInherited);
         }
     }
 

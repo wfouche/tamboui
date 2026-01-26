@@ -408,6 +408,96 @@ class SelectorParserTest {
     }
 
     @Nested
+    @DisplayName("Combinator + Universal selector")
+    class CombinatorUniversalTests {
+
+        @Test
+        @DisplayName("parses Panel > * as ChildSelector(TypeSelector, UniversalSelector)")
+        void parsesChildUniversal() {
+            Selector selector = SelectorParser.parse("Panel > *");
+
+            assertThat(selector).isInstanceOf(ChildSelector.class);
+            ChildSelector child = (ChildSelector) selector;
+            assertThat(child.parent()).isInstanceOf(TypeSelector.class);
+            assertThat(((TypeSelector) child.parent()).typeName()).isEqualTo("Panel");
+            assertThat(child.child()).isInstanceOf(UniversalSelector.class);
+        }
+
+        @Test
+        @DisplayName("parses Panel * as DescendantSelector(TypeSelector, UniversalSelector)")
+        void parsesDescendantUniversal() {
+            Selector selector = SelectorParser.parse("Panel *");
+
+            assertThat(selector).isInstanceOf(DescendantSelector.class);
+            DescendantSelector desc = (DescendantSelector) selector;
+            assertThat(desc.ancestor()).isInstanceOf(TypeSelector.class);
+            assertThat(((TypeSelector) desc.ancestor()).typeName()).isEqualTo("Panel");
+            assertThat(desc.descendant()).isInstanceOf(UniversalSelector.class);
+        }
+
+        @Test
+        @DisplayName("parses .class > * as ChildSelector(ClassSelector, UniversalSelector)")
+        void parsesClassChildUniversal() {
+            Selector selector = SelectorParser.parse(".container > *");
+
+            assertThat(selector).isInstanceOf(ChildSelector.class);
+            ChildSelector child = (ChildSelector) selector;
+            assertThat(child.parent()).isInstanceOf(ClassSelector.class);
+            assertThat(child.child()).isInstanceOf(UniversalSelector.class);
+        }
+
+        @Test
+        @DisplayName("parses #id * as DescendantSelector(IdSelector, UniversalSelector)")
+        void parsesIdDescendantUniversal() {
+            Selector selector = SelectorParser.parse("#sidebar *");
+
+            assertThat(selector).isInstanceOf(DescendantSelector.class);
+            DescendantSelector desc = (DescendantSelector) selector;
+            assertThat(desc.ancestor()).isInstanceOf(IdSelector.class);
+            assertThat(desc.descendant()).isInstanceOf(UniversalSelector.class);
+        }
+
+        @Test
+        @DisplayName("Panel > * matches direct child of Panel")
+        void childUniversalMatchesDirectChild() {
+            Selector selector = SelectorParser.parse("Panel > *");
+            TestElement parent = new TestElement("Panel", null, Collections.emptySet());
+            TestElement child = new TestElement("Button", null, Collections.emptySet());
+
+            assertThat(selector.matches(child, PseudoClassState.NONE, Collections.singletonList(parent))).isTrue();
+        }
+
+        @Test
+        @DisplayName("Panel > * does not match grandchild")
+        void childUniversalDoesNotMatchGrandchild() {
+            Selector selector = SelectorParser.parse("Panel > *");
+            TestElement grandparent = new TestElement("Panel", null, Collections.emptySet());
+            TestElement parent = new TestElement("Row", null, Collections.emptySet());
+            TestElement child = new TestElement("Button", null, Collections.emptySet());
+
+            List<Styleable> ancestors = Arrays.asList(grandparent, parent);
+            assertThat(selector.matches(child, PseudoClassState.NONE, ancestors)).isFalse();
+        }
+
+        @Test
+        @DisplayName("Panel * matches any descendant")
+        void descendantUniversalMatchesAnyDescendant() {
+            Selector selector = SelectorParser.parse("Panel *");
+            TestElement grandparent = new TestElement("Panel", null, Collections.emptySet());
+            TestElement parent = new TestElement("Row", null, Collections.emptySet());
+            TestElement child = new TestElement("Button", null, Collections.emptySet());
+
+            // Direct child
+            assertThat(selector.matches(parent, PseudoClassState.NONE,
+                    Collections.singletonList(grandparent))).isTrue();
+
+            // Grandchild
+            List<Styleable> ancestors = Arrays.asList(grandparent, parent);
+            assertThat(selector.matches(child, PseudoClassState.NONE, ancestors)).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("Complex selectors")
     class ComplexSelectorTests {
 
