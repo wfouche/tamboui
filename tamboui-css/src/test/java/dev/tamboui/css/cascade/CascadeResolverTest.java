@@ -297,6 +297,50 @@ class CascadeResolverTest {
         assertThat(resolved.borderLeft()).hasValue("*");
     }
 
+    @Test
+    void descendantUniversalSelectorResolvesOnChild() {
+        String css = "Panel * { text-overflow: ellipsis; }";
+        StyleEngine engine = StyleEngine.create();
+        engine.addStylesheet("test", css);
+        engine.setActiveStylesheet("test");
+
+        Styleable panel = createStyleable("Panel", null, Collections.emptySet());
+        Styleable child = createStyleable("TextElement", null, Collections.emptySet());
+
+        // Resolve child with panel as ancestor
+        CssStyleResolver resolved = engine.resolve(child,
+                dev.tamboui.css.cascade.PseudoClassState.NONE,
+                Collections.singletonList(panel));
+
+        assertThat(resolved.hasProperties()).isTrue();
+        assertThat(resolved.textOverflow()).isPresent();
+    }
+
+    @Test
+    void childUniversalSelectorResolvesOnDirectChildOnly() {
+        String css = "Panel > * { text-overflow: ellipsis; }";
+        StyleEngine engine = StyleEngine.create();
+        engine.addStylesheet("test", css);
+        engine.setActiveStylesheet("test");
+
+        Styleable panel = createStyleable("Panel", null, Collections.emptySet());
+        Styleable directChild = createStyleable("TextElement", null, Collections.emptySet());
+        Styleable grandchild = createStyleable("TextElement", null, Collections.emptySet());
+
+        // Direct child should match
+        CssStyleResolver directResolved = engine.resolve(directChild,
+                dev.tamboui.css.cascade.PseudoClassState.NONE,
+                Collections.singletonList(panel));
+        assertThat(directResolved.textOverflow()).isPresent();
+
+        // Grandchild should NOT match
+        Styleable middleRow = createStyleable("Row", null, Collections.emptySet());
+        CssStyleResolver grandchildResolved = engine.resolve(grandchild,
+                dev.tamboui.css.cascade.PseudoClassState.NONE,
+                java.util.Arrays.asList(panel, middleRow));
+        assertThat(grandchildResolved.textOverflow()).isEmpty();
+    }
+
     private Styleable createStyleable(String type, String id, Set<String> classes) {
         return new TestStyleable(type, id, classes);
     }

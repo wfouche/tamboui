@@ -122,39 +122,29 @@ public final class TypedPropertyMap {
      * @return a new map with fallback behavior for inheritable properties
      */
     public TypedPropertyMap withFallback(TypedPropertyMap fallback) {
-        return withFallback(fallback, Collections.emptySet());
-    }
-
-    /**
-     * Creates a new property map that uses this map's values, falling back to
-     * the given fallback map for inherited properties that are not set in this map.
-     * <p>
-     * Properties are inherited from the fallback if they are either:
-     * <ul>
-     *   <li>Marked as inheritable via {@link PropertyDefinition#isInheritable()}</li>
-     *   <li>Listed in the {@code inheritableProps} set (force-inheritable by parent)</li>
-     * </ul>
-     *
-     * @param fallback        the fallback map (typically from parent element)
-     * @param inheritableProps additional property names to treat as inheritable
-     * @return a new map with fallback behavior for inheritable properties
-     */
-    public TypedPropertyMap withFallback(TypedPropertyMap fallback, Set<String> inheritableProps) {
         if (fallback == null || fallback.isEmpty()) {
             return this;
         }
         if (this.isEmpty()) {
             // Only inherit inheritable properties from fallback
-            return filterInheritable(fallback, inheritableProps);
+            Map<PropertyDefinition<?>, Object> filtered = new HashMap<>();
+            for (Map.Entry<PropertyDefinition<?>, Object> entry : fallback.values.entrySet()) {
+                if (entry.getKey().isInheritable()) {
+                    filtered.put(entry.getKey(), entry.getValue());
+                }
+            }
+            if (filtered.isEmpty()) {
+                return EMPTY;
+            }
+            return new TypedPropertyMap(Collections.unmodifiableMap(filtered));
         }
 
         Map<PropertyDefinition<?>, Object> merged = new HashMap<>();
 
         // First, add inheritable properties from fallback
         for (Map.Entry<PropertyDefinition<?>, Object> entry : fallback.values.entrySet()) {
-            PropertyDefinition<?> prop = entry.getKey();
-            if (prop.isInheritable() || inheritableProps.contains(prop.name())) {
-                merged.put(prop, entry.getValue());
+            if (entry.getKey().isInheritable()) {
+                merged.put(entry.getKey(), entry.getValue());
             }
         }
 
@@ -162,20 +152,6 @@ public final class TypedPropertyMap {
         merged.putAll(this.values);
 
         return new TypedPropertyMap(Collections.unmodifiableMap(merged));
-    }
-
-    private static TypedPropertyMap filterInheritable(TypedPropertyMap source, Set<String> inheritableProps) {
-        Map<PropertyDefinition<?>, Object> filtered = new HashMap<>();
-        for (Map.Entry<PropertyDefinition<?>, Object> entry : source.values.entrySet()) {
-            PropertyDefinition<?> prop = entry.getKey();
-            if (prop.isInheritable() || inheritableProps.contains(prop.name())) {
-                filtered.put(prop, entry.getValue());
-            }
-        }
-        if (filtered.isEmpty()) {
-            return EMPTY;
-        }
-        return new TypedPropertyMap(Collections.unmodifiableMap(filtered));
     }
 
     @Override

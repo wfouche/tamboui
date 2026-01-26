@@ -159,7 +159,6 @@ public final class CssParser {
 
         StringBuilder value = new StringBuilder();
         boolean important = false;
-        boolean inheritable = false;
         boolean first = true;
 
         while (!check(Token.Semicolon.class) && !check(Token.CloseBrace.class) && !isAtEnd()) {
@@ -172,11 +171,6 @@ public final class CssParser {
                 } else {
                     throw error("Expected 'important' after '!'");
                 }
-            } else if (token instanceof Token.Ident &&
-                    PropertyValue.INHERITABLE_KEYWORD.equals(((Token.Ident) token).value())) {
-                // Handle 'inheritable' keyword
-                advance();
-                inheritable = true;
             } else {
                 Token t = advance();
                 // Preserve whitespace between value tokens
@@ -194,7 +188,7 @@ public final class CssParser {
 
         String trimmedValue = value.toString().trim();
         declarations.put(property.value(),
-                PropertyValue.create(trimmedValue, important, inheritable));
+                new PropertyValue(trimmedValue, important));
     }
 
     private Selector parseSelector() {

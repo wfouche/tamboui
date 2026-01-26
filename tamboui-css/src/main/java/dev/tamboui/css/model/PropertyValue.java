@@ -19,36 +19,18 @@ public final class PropertyValue {
      */
     public static final String INHERIT_KEYWORD = "inherit";
 
-    /**
-     * The keyword used when a parent wants to mark a value as inheritable to children.
-     */
-    public static final String INHERITABLE_KEYWORD = "inheritable";
-
     private final String raw;
     private final boolean important;
-    private final boolean inheritable;
 
     /**
-     * Creates a property value with all flags.
-     *
-     * @param raw         the raw value string
-     * @param important   whether the value has !important
-     * @param inheritable whether the value is marked as inheritable
-     */
-    public PropertyValue(String raw, boolean important, boolean inheritable) {
-        this.raw = Objects.requireNonNull(raw);
-        this.important = important;
-        this.inheritable = inheritable;
-    }
-
-    /**
-     * Backward-compatible constructor.
+     * Creates a property value.
      *
      * @param raw       the raw value string
      * @param important whether the value has !important
      */
     public PropertyValue(String raw, boolean important) {
-        this(raw, important, false);
+        this.raw = Objects.requireNonNull(raw);
+        this.important = important;
     }
 
     /**
@@ -58,7 +40,7 @@ public final class PropertyValue {
      * @return the property value
      */
     public static PropertyValue of(String raw) {
-        return new PropertyValue(raw, false, false);
+        return new PropertyValue(raw, false);
     }
 
     /**
@@ -68,29 +50,7 @@ public final class PropertyValue {
      * @return the property value
      */
     public static PropertyValue important(String raw) {
-        return new PropertyValue(raw, true, false);
-    }
-
-    /**
-     * Creates an inheritable property value.
-     *
-     * @param raw the raw value string
-     * @return the property value
-     */
-    public static PropertyValue inheritable(String raw) {
-        return new PropertyValue(raw, false, true);
-    }
-
-    /**
-     * Creates a property value with the specified flags.
-     *
-     * @param raw         the raw value string
-     * @param important   whether the value has !important
-     * @param inheritable whether the value is marked as inheritable
-     * @return the property value
-     */
-    public static PropertyValue create(String raw, boolean important, boolean inheritable) {
-        return new PropertyValue(raw, important, inheritable);
+        return new PropertyValue(raw, true);
     }
 
     public String raw() {
@@ -99,15 +59,6 @@ public final class PropertyValue {
 
     public boolean important() {
         return important;
-    }
-
-    /**
-     * Returns true if this value is marked as inheritable by the parent.
-     *
-     * @return true if marked inheritable
-     */
-    public boolean inheritable() {
-        return inheritable;
     }
 
     /**
@@ -130,24 +81,19 @@ public final class PropertyValue {
         }
         PropertyValue that = (PropertyValue) o;
         return important == that.important
-                && inheritable == that.inheritable
                 && raw.equals(that.raw);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(raw, important, inheritable);
+        return Objects.hash(raw, important);
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(raw);
-        if (inheritable) {
-            sb.append(" inheritable");
-        }
         if (important) {
-            sb.append(" !important");
+            return raw + " !important";
         }
-        return sb.toString();
+        return raw;
     }
 }

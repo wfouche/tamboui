@@ -7,6 +7,7 @@ package dev.tamboui.css.integration;
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.CssStyleResolver;
+import dev.tamboui.css.cascade.PseudoClassState;
 import dev.tamboui.css.engine.StyleEngine;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Overflow;
@@ -17,8 +18,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,9 +29,9 @@ import static dev.tamboui.assertj.BufferAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for CSS inheritance features (inherit keyword and inheritable modifier).
+ * Integration tests for CSS inheritance features (inherit keyword and structural selectors).
  * <p>
- * Tests actual rendered output to verify that the inheritance features work correctly
+ * Tests actual rendered output to verify that inheritance features work correctly
  * in the rendering pipeline.
  */
 class CssInheritanceIntegrationTest {
@@ -41,48 +44,45 @@ class CssInheritanceIntegrationTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // INHERITABLE MODIFIER TESTS - Rendered Output
+    // STRUCTURAL SELECTOR TESTS - Rendered Output
     // ═══════════════════════════════════════════════════════════════════════════
 
     @Nested
-    @DisplayName("inheritable modifier - rendered output verification")
-    class InheritableRenderedOutputTests {
+    @DisplayName("structural selector - rendered output verification")
+    class StructuralSelectorRenderedOutputTests {
 
         @Test
-        @DisplayName("text-overflow: ellipsis inheritable - child paragraph renders with ellipsis")
-        void textOverflowInheritableRendersEllipsis() {
-            // CSS: container marks text-overflow as inheritable
+        @DisplayName(".container * { text-overflow: ellipsis } - child paragraph renders with ellipsis")
+        void textOverflowStructuralSelectorRendersEllipsis() {
+            // CSS: structural selector applies text-overflow to all descendants of .container
             styleEngine.addStylesheet(
-                ".container { text-overflow: ellipsis inheritable; }\n" +
-                ".item { }"  // Item has no text-overflow, should inherit
+                ".container * { text-overflow: ellipsis; }\n" +
+                ".item { }"
             );
 
-            // Resolve styles: parent (container) and child (item)
+            // Resolve styles: child with container as ancestor
             TestStyleable container = new TestStyleable("Panel", null, setOf("container"));
             TestStyleable item = new TestStyleable("Paragraph", null, setOf("item"));
 
-            CssStyleResolver containerResolved = styleEngine.resolve(container);
-            CssStyleResolver itemResolved = styleEngine.resolve(item);
+            // Resolve item with container in ancestor list — the .container * rule matches directly
+            List<Styleable> ancestors = Collections.singletonList(container);
+            CssStyleResolver itemResolved = styleEngine.resolve(item, PseudoClassState.NONE, ancestors);
 
-            // Merge: child inherits from parent
-            CssStyleResolver mergedResolver = itemResolved.withFallback(containerResolved);
+            // Verify child got text-overflow from the structural selector
+            assertThat(itemResolved.textOverflow()).contains(Overflow.ELLIPSIS);
 
-            // Verify child inherited text-overflow
-            assertThat(mergedResolver.textOverflow()).contains(Overflow.ELLIPSIS);
-
-            // Render a paragraph with the inherited style - area is only 15 chars wide
+            // Render a paragraph with the style - area is only 15 chars wide
             Rect area = new Rect(0, 0, 15, 1);
             Buffer buffer = Buffer.empty(area);
 
             Paragraph paragraph = Paragraph.builder()
                 .text("Hello World, this is long text that should be truncated")
-                .styleResolver(mergedResolver)
+                .styleResolver(itemResolved)
                 .build();
 
             paragraph.render(area, buffer);
 
             // Text should be truncated with ellipsis
-            // Expected: "Hello World,..." (12 chars + "...")
             Buffer expected = Buffer.empty(area);
             expected.setString(0, 0, "Hello World,...", Style.EMPTY);
 
@@ -90,19 +90,23 @@ class CssInheritanceIntegrationTest {
         }
 
         @Test
-        @DisplayName("without inheritable - child does NOT get parent's text-overflow")
-        void withoutInheritableChildDoesNotInherit() {
-            // CSS: container has text-overflow but NOT marked inheritable
+        @DisplayName("without * selector - child does NOT get parent's text-overflow")
+        void withoutStructuralSelectorChildDoesNotInherit() {
+            // CSS: container has text-overflow but no descendant selector
             styleEngine.addStylesheet(
-                ".container { text-overflow: ellipsis; }\n" +  // NOT inheritable
+                ".container { text-overflow: ellipsis; }\n" +
                 ".item { }"
             );
 
             TestStyleable container = new TestStyleable("Panel", null, setOf("container"));
             TestStyleable item = new TestStyleable("Paragraph", null, setOf("item"));
 
+            // Resolve with container as ancestor — no .container * rule, so no match
+            List<Styleable> ancestors = Collections.singletonList(container);
+            CssStyleResolver itemResolved = styleEngine.resolve(item, PseudoClassState.NONE, ancestors);
+
+            // Apply withFallback for natural inheritance check — text-overflow is NOT inheritable
             CssStyleResolver containerResolved = styleEngine.resolve(container);
-            CssStyleResolver itemResolved = styleEngine.resolve(item);
             CssStyleResolver mergedResolver = itemResolved.withFallback(containerResolved);
 
             // Child should NOT have text-overflow (not inheritable by default)
@@ -127,22 +131,23 @@ class CssInheritanceIntegrationTest {
         }
 
         @Test
-        @DisplayName("child can override inherited text-overflow")
-        void childCanOverrideInheritedTextOverflow() {
+        @DisplayName("child can override structural selector text-overflow")
+        void childCanOverrideStructuralSelectorTextOverflow() {
             styleEngine.addStylesheet(
-                ".container { text-overflow: ellipsis inheritable; }\n" +
-                ".item { text-overflow: clip; }"  // Child explicitly overrides
+                ".container * { text-overflow: ellipsis; }\n" +
+                ".item { text-overflow: clip; }"
             );
 
             TestStyleable container = new TestStyleable("Panel", null, setOf("container"));
             TestStyleable item = new TestStyleable("Paragraph", null, setOf("item"));
 
-            CssStyleResolver containerResolved = styleEngine.resolve(container);
-            CssStyleResolver itemResolved = styleEngine.resolve(item);
-            CssStyleResolver mergedResolver = itemResolved.withFallback(containerResolved);
+            // Resolve item with container as ancestor — both rules match,
+            // .item has higher specificity than .container * so it wins
+            List<Styleable> ancestors = Collections.singletonList(container);
+            CssStyleResolver itemResolved = styleEngine.resolve(item, PseudoClassState.NONE, ancestors);
 
             // Child's explicit value should override
-            assertThat(mergedResolver.textOverflow()).contains(Overflow.CLIP);
+            assertThat(itemResolved.textOverflow()).contains(Overflow.CLIP);
 
             // Render: text should be clipped
             Rect area = new Rect(0, 0, 15, 1);
@@ -150,7 +155,7 @@ class CssInheritanceIntegrationTest {
 
             Paragraph paragraph = Paragraph.builder()
                 .text("Hello World, this is long text")
-                .styleResolver(mergedResolver)
+                .styleResolver(itemResolved)
                 .build();
 
             paragraph.render(area, buffer);
@@ -218,10 +223,10 @@ class CssInheritanceIntegrationTest {
     class MultiLevelInheritanceTests {
 
         @Test
-        @DisplayName("inheritable propagates through grandparent -> parent -> child")
-        void inheritablePropagatesMultipleLevels() {
+        @DisplayName("structural selector propagates through grandparent -> parent -> child")
+        void structuralSelectorPropagatesMultipleLevels() {
             styleEngine.addStylesheet(
-                ".grandparent { text-overflow: ellipsis inheritable; }\n" +
+                ".grandparent * { text-overflow: ellipsis; }\n" +
                 ".parent { }\n" +
                 ".child { }"
             );
@@ -230,12 +235,12 @@ class CssInheritanceIntegrationTest {
             TestStyleable parent = new TestStyleable("Row", null, setOf("parent"));
             TestStyleable child = new TestStyleable("Paragraph", null, setOf("child"));
 
-            // Chain: grandparent -> parent -> child
-            CssStyleResolver grandparentResolved = styleEngine.resolve(grandparent);
-            CssStyleResolver parentResolved = styleEngine.resolve(parent).withFallback(grandparentResolved);
-            CssStyleResolver childResolved = styleEngine.resolve(child).withFallback(parentResolved);
+            // Resolve child with [grandparent, parent] ancestor list
+            // Descendant selector .grandparent * matches at any depth
+            List<Styleable> ancestors = Arrays.asList(grandparent, parent);
+            CssStyleResolver childResolved = styleEngine.resolve(child, PseudoClassState.NONE, ancestors);
 
-            // Child should inherit from grandparent
+            // Child should get text-overflow from the structural selector
             assertThat(childResolved.textOverflow()).contains(Overflow.ELLIPSIS);
 
             // Verify rendered output

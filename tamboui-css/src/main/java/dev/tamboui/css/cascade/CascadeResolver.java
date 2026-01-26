@@ -124,11 +124,6 @@ public final class CascadeResolver {
                 continue;
             }
 
-            // Handle "inheritable" modifier (parent marks value as inheritable)
-            if (pv.inheritable()) {
-                builder.markInheritable(prop);
-            }
-
             String resolvedValue = PropertyConverter.resolveVariables(value, variables);
 
             // Try to look up the property in the registry
