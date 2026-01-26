@@ -30,6 +30,7 @@ public final class ConstraintConverter implements PropertyConverter<Constraint> 
     public static final ConstraintConverter INSTANCE = new ConstraintConverter();
 
     private static final Pattern FILL_PATTERN = Pattern.compile("fill(?:\\((\\d+)\\))?");
+    private static final Pattern FR_PATTERN = Pattern.compile("(\\d+)fr");
     private static final Pattern PERCENT_PATTERN = Pattern.compile("(\\d+)%");
     private static final Pattern MIN_PATTERN = Pattern.compile("min\\((\\d+)\\)");
     private static final Pattern MAX_PATTERN = Pattern.compile("max\\((\\d+)\\)");
@@ -57,6 +58,13 @@ public final class ConstraintConverter implements PropertyConverter<Constraint> 
                 return Optional.of(Constraint.fill(Integer.parseInt(weight)));
             }
             return Optional.of(Constraint.fill());
+        }
+
+        // Try fr pattern: "1fr", "2fr" (alias for fill)
+        Matcher frMatcher = FR_PATTERN.matcher(resolved);
+        if (frMatcher.matches()) {
+            int weight = Integer.parseInt(frMatcher.group(1));
+            return Optional.of(Constraint.fill(weight));
         }
 
         // Try percentage pattern: "50%"

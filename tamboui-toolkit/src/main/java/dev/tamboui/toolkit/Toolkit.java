@@ -10,6 +10,7 @@ import dev.tamboui.toolkit.elements.CalendarElement;
 import dev.tamboui.toolkit.elements.CanvasElement;
 import dev.tamboui.toolkit.elements.ChartElement;
 import dev.tamboui.toolkit.elements.GenericWidgetElement;
+import dev.tamboui.toolkit.elements.GridElement;
 import dev.tamboui.toolkit.elements.Column;
 import dev.tamboui.toolkit.elements.ColumnsElement;
 import dev.tamboui.toolkit.elements.DialogElement;
@@ -381,6 +382,47 @@ public final class Toolkit {
      */
     public static ColumnsElement columns(Supplier<? extends Element> contentSupplier) {
         return new ColumnsElement(new LazyElement(contentSupplier));
+    }
+
+    // ==================== Grid ====================
+
+    /**
+     * Creates a CSS Grid-inspired grid layout.
+     *
+     * @param children the child elements
+     * @return a new grid layout
+     */
+    public static GridElement grid(Element... children) {
+        return new GridElement(children);
+    }
+
+    /**
+     * Creates an empty grid layout.
+     *
+     * @return a new empty grid layout
+     */
+    public static GridElement grid() {
+        return new GridElement();
+    }
+
+    /**
+     * Creates a grid layout from a collection.
+     *
+     * @param children the child elements
+     * @return a new grid layout
+     */
+    public static GridElement grid(Collection<? extends Element> children) {
+        return new GridElement(children);
+    }
+
+    /**
+     * Creates a grid layout with lazy content.
+     *
+     * @param contentSupplier the supplier that provides the content
+     * @return a new grid layout
+     */
+    public static GridElement grid(Supplier<? extends Element> contentSupplier) {
+        return new GridElement(new LazyElement(contentSupplier));
     }
 
     // ==================== Dialog ====================

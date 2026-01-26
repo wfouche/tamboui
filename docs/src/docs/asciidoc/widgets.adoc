@@ -75,6 +75,10 @@ include::_attributes.adoc[]
 |Stateless
 |Multi-column grid layout
 
+|<<grid,Grid>>
+|Stateless
+|CSS Grid-inspired layout with constraints and gutter
+
 |<<clear,Clear>>
 |Stateless
 |Clears an area (for widget layering)
@@ -175,6 +179,68 @@ Columns newspaperLayout = Columns.builder()
 ----
 
 NOTE: The widget-level `Columns` requires an explicit column count. For auto-detection based on child widths, use `ColumnsElement` in the Toolkit DSL (via the `columns()` factory method), which computes the column count from available width and child preferred widths.
+
+[[grid]]
+=== Grid
+
+A CSS Grid-inspired layout widget that arranges children into a grid with explicit control over grid dimensions, per-column/per-row sizing constraints, and gutter spacing.
+Unlike `Columns` (which uses ordering modes and spacing), `Grid` provides independent horizontal and vertical gutter, per-column width constraints, per-row height constraints, and constraint cycling when fewer constraints than grid dimensions (matching Textual behavior).
+
+[source,java]
+----
+Grid grid = Grid.builder()
+    .children(widget1, widget2, widget3, widget4, widget5, widget6)
+    .columnCount(3)
+    .horizontalGutter(1)
+    .verticalGutter(1)
+    .build();
+
+grid.render(area, buffer);
+----
+
+Builder options:
+
+* `children(Widget...)` / `children(List<Widget>)` - The child widgets to arrange
+* `columnCount(int)` - Number of columns (defaults to 1)
+* `horizontalGutter(int)` - Gap between columns in cells (default: 0)
+* `verticalGutter(int)` - Gap between rows in cells (default: 0)
+* `flex(Flex)` - How remaining space is distributed (default: `Flex.START`)
+* `columnConstraints(Constraint...)` - Per-column width constraints (default: `fill()` for all). Constraints cycle when fewer than the column count.
+* `rowConstraints(Constraint...)` - Per-row height constraints. Constraints cycle when fewer than the row count.
+* `rowHeights(int...)` - Explicit row heights (default: equal distribution)
+
+[source,java]
+----
+// Grid with custom column widths and gutter
+Grid dashboard = Grid.builder()
+    .children(cpuPanel, memoryPanel, diskPanel,
+              netUpPanel, netDownPanel, uptimePanel)
+    .columnCount(3)
+    .columnConstraints(
+        Constraint.length(16),  // fixed first column
+        Constraint.fill(),      // remaining columns fill
+        Constraint.fill()
+    )
+    .horizontalGutter(2)
+    .verticalGutter(1)
+    .build();
+
+// Grid with row constraints
+Grid sized = Grid.builder()
+    .children(header, content, sidebar, footer)
+    .columnCount(2)
+    .rowConstraints(Constraint.length(3), Constraint.fill())
+    .build();
+
+// Column constraint cycling: single constraint applied to all columns
+Grid uniform = Grid.builder()
+    .children(a, b, c, d, e, f)
+    .columnCount(3)
+    .columnConstraints(Constraint.length(10))  // all 3 cols get length(10)
+    .build();
+----
+
+NOTE: The widget-level `Grid` requires an explicit column count. For auto-sizing based on child count (`ceil(sqrt(n))` columns) and CSS property support, use `GridElement` in the Toolkit DSL (via the `grid()` factory method).
 
 == Text Widgets
 
@@ -647,6 +713,17 @@ columns(item1, item2, item3, item4, item5, item6)
 columns(child1, child2, child3, child4)
     .columnCount(2)
     .columnFirst()
+
+// CSS Grid-inspired layout with gutter and constraints
+grid(item1, item2, item3, item4, item5, item6)
+    .gridSize(3)
+    .gutter(1)
+
+// Grid with explicit dimensions and column constraints
+grid(header, content, sidebar, footer)
+    .gridSize(2, 2)
+    .gridColumns(Constraint.length(20), Constraint.fill())
+    .gutter(1, 0)
 ----
 
 See link:api-levels.html[API Levels] for more details on the Toolkit DSL.
