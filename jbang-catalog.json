@@ -37,6 +37,18 @@
     "unicode-inline-demo": {
       "script-ref": "demos/unicode-inline-demo/src/main/java/dev/tamboui/demo/UnicodeDemo.java"
     },
+    "dock-demo": {
+      "script-ref": "tamboui-core/demos/dock-demo/src/main/java/dev/tamboui/demo/DockDemo.java"
+    },
+    "flow-demo": {
+      "script-ref": "tamboui-core/demos/flow-demo/src/main/java/dev/tamboui/demo/FlowDemo.java"
+    },
+    "grid-demo": {
+      "script-ref": "tamboui-core/demos/grid-demo/src/main/java/dev/tamboui/demo/GridDemo.java"
+    },
+    "stack-demo": {
+      "script-ref": "tamboui-core/demos/stack-demo/src/main/java/dev/tamboui/demo/StackDemo.java"
+    },
     "css-demo": {
       "script-ref": "tamboui-css/demos/css-demo/src/main/java/dev/tamboui/demo/CssDemo.java"
     },
@@ -75,6 +87,9 @@
     },
     "jtop-demo": {
       "script-ref": "tamboui-toolkit/demos/jtop-demo/src/main/java/dev/tamboui/demo/JTopDemo.java"
+    },
+    "layout-demo": {
+      "script-ref": "tamboui-toolkit/demos/layout-demo/src/main/java/dev/tamboui/demo/LayoutDemo.java"
     },
     "newyear-demo": {
       "script-ref": "tamboui-toolkit/demos/newyear-demo/src/main/java/dev/tamboui/demo/NewYearDemo.java"

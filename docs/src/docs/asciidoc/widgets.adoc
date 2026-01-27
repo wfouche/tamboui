@@ -116,6 +116,8 @@ Clear.INSTANCE.render(dialogArea, buffer);
 // Then render your dialog on top
 ----
 
+For layout widgets (Columns, Grid, Dock, Stack, Flow), see link:layouts.html[Layouts Reference].
+
 == Text Widgets
 
 === Paragraph
@@ -579,5 +581,7 @@ textInput(inputState).placeholder("Enter name...")
 row(left, right).spacing(1)
 column(top, middle, bottom).spacing(1)
 ----
+
+For layout DSL examples (columns, grid, dock, stack, flow), see link:layouts.html[Layouts Reference].
 
 See link:api-levels.html[API Levels] for more details on the Toolkit DSL.

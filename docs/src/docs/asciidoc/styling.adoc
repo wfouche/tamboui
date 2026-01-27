@@ -604,6 +604,54 @@ These properties control how elements are sized and positioned within their cont
 |`direction`
 |Layout direction for panels
 |`direction: horizontal;` `direction: vertical;`
+
+|`column-count`
+|Number of columns in ColumnsElement
+|`column-count: 3;`
+
+|`column-order`
+|Ordering mode for ColumnsElement children
+|`column-order: row-first;` `column-order: column-first;`
+
+|`grid-size`
+|Grid dimensions for GridElement — columns only or columns and rows
+|`grid-size: 3;` `grid-size: 3 4;`
+
+|`grid-columns`
+|Per-column width constraints for GridElement (space-separated, cycles when fewer than columns)
+|`grid-columns: fill fill(2) 20;`
+
+|`grid-rows`
+|Per-row height constraints for GridElement (space-separated, cycles when fewer than rows)
+|`grid-rows: 2 3;`
+
+|`grid-gutter`
+|Gutter spacing for GridElement — uniform or horizontal/vertical
+|`grid-gutter: 2;` `grid-gutter: 1 2;`
+
+|`dock-top-height`
+|Height constraint for DockElement top region
+|`dock-top-height: 3;`
+
+|`dock-bottom-height`
+|Height constraint for DockElement bottom region
+|`dock-bottom-height: 3;`
+
+|`dock-left-width`
+|Width constraint for DockElement left region
+|`dock-left-width: 20;`
+
+|`dock-right-width`
+|Width constraint for DockElement right region
+|`dock-right-width: fill;`
+
+|`content-align`
+|Content alignment for StackElement children
+|`content-align: center;` `content-align: top-left;` `content-align: stretch;`
+
+|`flow-row-spacing`
+|Vertical spacing between rows in FlowElement
+|`flow-row-spacing: 1;`
 |===
 
 ===== Constraint Values
@@ -625,6 +673,9 @@ The `height` and `width` properties accept constraint values:
 
 |`fill(<weight>)`
 |Fill with specified weight (e.g., `height: fill(2);`)
+
+|`<n>fr`
+|Fractional unit — alias for `fill(<n>)` (e.g., `1fr` is `fill(1)`, `2fr` is `fill(2)`)
 
 |`fit`
 |Size to content (e.g., `width: fit;`)

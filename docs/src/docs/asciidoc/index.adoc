@@ -37,7 +37,7 @@ Feedback, issues, and contributions are welcome!
 |Module |Description
 
 |`{core-module}`
-|Core types: Buffer, Cell, Rect, Style, Layout, Text primitives
+|Core types: Buffer, Cell, Rect, Style, Layout, Text primitives, and layout widgets (Columns, Grid, Dock, Stack, Flow)
 
 |`{widgets-module}`
 |All widget implementations (Block, Paragraph, List, Table, Chart, etc.)
@@ -77,6 +77,9 @@ Understanding the rendering model, buffer system, layout, and styling.
 
 === link:markup.html[Markup Text]
 BBCode-style markup for creating styled text with colors, modifiers, and custom tags.
+
+=== link:layouts.html[Layouts Reference]
+Layout widgets for arranging children: Columns, Grid, Dock, Stack, Flow.
 
 === link:widgets.html[Widgets Reference]
 Comprehensive guide to all available widgets with examples.
