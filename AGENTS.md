@@ -182,10 +182,10 @@ TamboUI uses a consistent exception hierarchy for framework errors.
 
 ### Exception Hierarchy
 
-- **`TamboUIException`** (`dev.tamboui.errors.TamboUIException`) - Abstract base exception for all TamboUI framework errors
+- **`TamboUIException`** (`dev.tamboui.error.TamboUIException`) - Abstract base exception for all TamboUI framework errors
  - Extends `RuntimeException` (unchecked)
  - Abstract base class that all TamboUI exceptions extend
- - **`TerminalIOException`** (`dev.tamboui.errors.RuntimeIOException`) - Extends `TamboUIException`
+ - **`RuntimeIOException`** (`dev.tamboui.error.RuntimeIOException`) - Extends `TamboUIException`
  - Used specifically for terminal I/O errors (wraps `IOException` from backend operations)
  - **`BackendException`** (`dev.tamboui.terminal.BackendException`) - Extends `TamboUIException`
  - Used for backend-related errors that are not specifically terminal I/O (e.g. native failures, provider lookup)
@@ -194,17 +194,17 @@ TamboUI uses a consistent exception hierarchy for framework errors.
 
 ### Exception Usage Guidelines
 
-1. **Terminal Operations**: All `Terminal` methods throw `TerminalIOException` for I/O errors
-   - Terminal wraps all `IOException`s from the backend in `TerminalIOException` with descriptive messages
+1. **Terminal Operations**: All `Terminal` methods throw `RuntimeIOException` for I/O errors
+   - Terminal wraps all `IOException`s from the backend in `RuntimeIOException` with descriptive messages
    - This provides a cleaner API and consistent error handling
-   - Use `TerminalIOException` when you know the error is I/O related
+   - Use `RuntimeIOException` when you know the error is I/O related
 
 2. **Backend Operations**: `Backend` interface methods still throw `IOException` (checked exception)
    - Backends are low-level implementations; `IOException` is appropriate here
-   - Terminal layer wraps these in `TerminalIOException` for user-facing APIs
+   - Terminal layer wraps these in `RuntimeIOException` for user-facing APIs
 
 3. **General Framework Errors**: Use the most specific `TamboUIException` subtype:
-   - `TerminalIOException` for terminal I/O errors
+   - `RuntimeIOException` for terminal I/O errors
    - `BackendException` for non-I/O backend errors (e.g., native/Panama failures, provider resolution)
    - `TuiException` for TUI framework errors (e.g., invalid bindings, render thread misuse)
 
@@ -223,7 +223,7 @@ TamboUI uses a consistent exception hierarchy for framework errors.
 When wrapping exceptions, always include context:
 ```java
 // Good: includes context and uses appropriate exception type
-throw new TerminalIOException(
+throw new RuntimeIOException(
     String.format("Failed to set cursor position to %s: %s", pos, e.getMessage()), e);
 
 // Good: backend error

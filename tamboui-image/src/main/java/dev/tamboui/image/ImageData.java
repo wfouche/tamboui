@@ -6,7 +6,7 @@ package dev.tamboui.image;
 
 import javax.imageio.ImageIO;
 
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;

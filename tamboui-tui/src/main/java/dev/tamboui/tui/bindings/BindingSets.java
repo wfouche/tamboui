@@ -4,8 +4,8 @@
  */
 package dev.tamboui.tui.bindings;
 
-import dev.tamboui.errors.RuntimeIOException;
-import dev.tamboui.tui.TuiException;
+import dev.tamboui.error.RuntimeIOException;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.MouseButton;
 import dev.tamboui.tui.event.MouseEventKind;

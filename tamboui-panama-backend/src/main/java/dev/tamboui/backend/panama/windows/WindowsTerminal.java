@@ -5,7 +5,7 @@
 package dev.tamboui.backend.panama.windows;
 
 import dev.tamboui.backend.panama.PlatformTerminal;
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.layout.Size;
 
 import java.io.IOException;

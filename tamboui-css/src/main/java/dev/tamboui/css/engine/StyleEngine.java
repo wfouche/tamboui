@@ -12,7 +12,7 @@ import dev.tamboui.css.model.Rule;
 import dev.tamboui.css.model.Stylesheet;
 import dev.tamboui.css.parser.CssParser;
 import dev.tamboui.css.property.PropertyConverter;
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.ColorConverter;
 

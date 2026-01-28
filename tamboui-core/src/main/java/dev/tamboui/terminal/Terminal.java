@@ -6,7 +6,7 @@ package dev.tamboui.terminal;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.buffer.CellUpdate;
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
 

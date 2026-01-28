@@ -14,7 +14,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.terminal.BackendException;
 
 /**

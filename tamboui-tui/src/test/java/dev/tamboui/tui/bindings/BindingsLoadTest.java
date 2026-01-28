@@ -4,8 +4,8 @@
  */
 package dev.tamboui.tui.bindings;
 
-import dev.tamboui.errors.TamboUIException;
-import dev.tamboui.tui.TuiException;
+import dev.tamboui.error.TamboUIException;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.KeyModifiers;

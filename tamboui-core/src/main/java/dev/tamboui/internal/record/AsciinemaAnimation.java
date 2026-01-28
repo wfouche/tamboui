@@ -5,7 +5,7 @@
 package dev.tamboui.internal.record;
 
 import dev.tamboui.buffer.Buffer;
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.StringWriter;

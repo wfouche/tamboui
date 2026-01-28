@@ -6,6 +6,9 @@ package dev.tamboui.tui;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import dev.tamboui.tui.error.TuiException;
+
 import org.junit.jupiter.api.DisplayName;
 
 import java.util.concurrent.CountDownLatch;

@@ -6,6 +6,8 @@ package dev.tamboui.tui;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import dev.tamboui.tui.error.TuiException;
+
 /**
  * Utility class for render thread management.
  * <p>

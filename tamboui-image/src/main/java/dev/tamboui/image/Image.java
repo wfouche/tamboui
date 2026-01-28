@@ -5,7 +5,7 @@
 package dev.tamboui.image;
 
 import dev.tamboui.buffer.Buffer;
-import dev.tamboui.errors.RuntimeIOException;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.image.capability.TerminalImageCapabilities;
 import dev.tamboui.image.protocol.ImageProtocol;
 import dev.tamboui.layout.Rect;

@@ -5,7 +5,7 @@
 package dev.tamboui.tui;
 
 import dev.tamboui.buffer.Buffer;
-import dev.tamboui.errors.TamboUIException;
+import dev.tamboui.error.TamboUIException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
 import dev.tamboui.style.Color;
