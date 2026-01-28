@@ -5,6 +5,7 @@
 package dev.tamboui.internal.record;
 
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.error.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -141,7 +142,7 @@ final class AsciinemaAnimation {
             }
         } catch (IOException e) {
             // StringWriter doesn't throw IOException
-            throw new RuntimeException("Unexpected IOException", e);
+            throw new RuntimeIOException("Unexpected IOException when writing Asciinema animation", e);
         }
 
         return writer.toString();
@@ -172,6 +173,7 @@ final class AsciinemaAnimation {
      * Generates the complete Asciinema cast file as a string.
      *
      * @return the cast file content
+     * @throws RuntimeIOException if an I/O error occurs
      */
     String toCast() {
         if (frames.isEmpty()) {
@@ -202,7 +204,7 @@ final class AsciinemaAnimation {
             }
         } catch (IOException e) {
             // StringWriter doesn't throw IOException
-            throw new RuntimeException("Unexpected IOException", e);
+            throw new RuntimeIOException("Unexpected IOException when writing Asciinema animation", e);
         }
 
         return writer.toString();

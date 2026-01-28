@@ -14,6 +14,7 @@ import dev.tamboui.toolkit.event.KeyEventHandler;
 import dev.tamboui.toolkit.event.MouseEventHandler;
 import dev.tamboui.toolkit.id.IdGenerator;
 import dev.tamboui.tui.bindings.ActionHandler;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.layout.Constraint;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
@@ -662,7 +663,7 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
      */
     public T id(String id) {
         if (this.elementId != null) {
-            throw new IllegalStateException("Element ID cannot be changed once set. Current ID: " + this.elementId);
+            throw new TuiException("Element ID cannot be changed once set. Current ID: " + this.elementId);
         }
         this.elementId = id;
         return self();

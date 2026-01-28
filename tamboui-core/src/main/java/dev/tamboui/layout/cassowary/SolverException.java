@@ -4,10 +4,12 @@
  */
 package dev.tamboui.layout.cassowary;
 
+import dev.tamboui.layout.LayoutException;
+
 /**
  * Base exception for Cassowary solver errors.
  */
-public class SolverException extends RuntimeException {
+public class SolverException extends LayoutException {
 
     /**
      * Creates a new solver exception with the given message.

@@ -8,6 +8,7 @@ import dev.tamboui.buffer.Buffer;
 import dev.tamboui.css.engine.StyleEngine;
 import dev.tamboui.toolkit.element.DefaultRenderContext;
 import dev.tamboui.toolkit.element.RenderContext;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.style.Color;
 import dev.tamboui.terminal.Frame;
@@ -299,7 +300,7 @@ class ListElementTest {
         @DisplayName("Cannot combine autoScroll with scrollToEnd")
         void cannotCombineAutoScrollWithScrollToEnd() {
             assertThatThrownBy(() -> list("A", "B").autoScroll().scrollToEnd())
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(TuiException.class)
                 .hasMessageContaining("autoScroll is already enabled");
         }
 
@@ -307,7 +308,7 @@ class ListElementTest {
         @DisplayName("Cannot combine autoScroll with stickyScroll")
         void cannotCombineAutoScrollWithStickyScroll() {
             assertThatThrownBy(() -> list("A", "B").autoScroll().stickyScroll())
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(TuiException.class)
                 .hasMessageContaining("autoScroll is already enabled");
         }
 
@@ -315,7 +316,7 @@ class ListElementTest {
         @DisplayName("Cannot combine scrollToEnd with stickyScroll")
         void cannotCombineScrollToEndWithStickyScroll() {
             assertThatThrownBy(() -> list("A", "B").scrollToEnd().stickyScroll())
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(TuiException.class)
                 .hasMessageContaining("scrollToEnd is already enabled");
         }
 
@@ -323,7 +324,7 @@ class ListElementTest {
         @DisplayName("Cannot combine stickyScroll with autoScroll")
         void cannotCombineStickyScrollWithAutoScroll() {
             assertThatThrownBy(() -> list("A", "B").stickyScroll().autoScroll())
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(TuiException.class)
                 .hasMessageContaining("stickyScroll is already enabled");
         }
 

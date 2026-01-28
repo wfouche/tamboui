@@ -15,6 +15,7 @@ import dev.tamboui.style.Color;
 import dev.tamboui.style.Style;
 import dev.tamboui.terminal.Frame;
 import dev.tamboui.tui.bindings.Actions;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.tui.event.MouseEvent;
 import dev.tamboui.tui.event.MouseEventKind;
@@ -401,17 +402,17 @@ public final class ListElement<T> extends StyledElement<ListElement<T>> {
 
     private void checkScrollModeNotSet(String requestedMode) {
         if (autoScroll && !"autoScroll".equals(requestedMode)) {
-            throw new IllegalStateException(
+            throw new TuiException(
                     "Cannot enable " + requestedMode + ": autoScroll is already enabled. " +
                     "Only one scroll mode (autoScroll, scrollToEnd, stickyScroll) can be active.");
         }
         if (autoScrollToEnd && !"scrollToEnd".equals(requestedMode)) {
-            throw new IllegalStateException(
+            throw new TuiException(
                     "Cannot enable " + requestedMode + ": scrollToEnd is already enabled. " +
                     "Only one scroll mode (autoScroll, scrollToEnd, stickyScroll) can be active.");
         }
         if (stickyScroll && !"stickyScroll".equals(requestedMode)) {
-            throw new IllegalStateException(
+            throw new TuiException(
                     "Cannot enable " + requestedMode + ": stickyScroll is already enabled. " +
                     "Only one scroll mode (autoScroll, scrollToEnd, stickyScroll) can be active.");
         }

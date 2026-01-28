@@ -12,6 +12,7 @@ import dev.tamboui.css.model.Rule;
 import dev.tamboui.css.model.Stylesheet;
 import dev.tamboui.css.parser.CssParser;
 import dev.tamboui.css.property.PropertyConverter;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.ColorConverter;
 
@@ -393,7 +394,7 @@ public final class StyleEngine {
                     resource.startsWith("/") ? resource.substring(1) : resource);
         }
         if (is == null) {
-            throw new IOException("Classpath resource not found: " + resource);
+            throw new RuntimeIOException("Classpath resource not found: " + resource);
         }
 
         try (BufferedReader reader = new BufferedReader(

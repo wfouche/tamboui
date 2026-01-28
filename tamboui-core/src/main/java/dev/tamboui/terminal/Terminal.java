@@ -6,6 +6,7 @@ package dev.tamboui.terminal;
 
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.buffer.CellUpdate;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
 
@@ -32,17 +33,21 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
      * Creates a new terminal instance with the given backend.
      *
      * @param backend the backend to use for terminal operations
-     * @throws IOException if initialization fails
+     * @throws RuntimeIOException if initialization fails
      */
-    public Terminal(B backend) throws IOException {
+    public Terminal(B backend) {
         this.backend = backend;
         this.hiddenCursor = false;
         this.rawOutput = createRawOutputStream(backend);
 
-        Size size = backend.size();
-        Rect area = Rect.of(size.width(), size.height());
-        this.currentBuffer = Buffer.empty(area);
-        this.previousBuffer = Buffer.empty(area);
+        try {
+            Size size = backend.size();
+            Rect area = Rect.of(size.width(), size.height());
+            this.currentBuffer = Buffer.empty(area);
+            this.previousBuffer = Buffer.empty(area);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to initialize terminal: " + e.getMessage(), e);
+        }
     }
 
     private static OutputStream createRawOutputStream(Backend backend) {
@@ -83,10 +88,14 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
      * Returns the current terminal size.
      *
      * @return the terminal size
-     * @throws IOException if the size cannot be determined
+     * @throws RuntimeIOException if the size cannot be determined
      */
-    public Size size() throws IOException {
-        return backend.size();
+    public Size size() {
+        try {
+            return backend.size();
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to get terminal size: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -95,101 +104,126 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
      *
      * @param renderer the function that renders to the frame
      * @return a completed frame containing the rendered buffer
-     * @throws IOException if drawing fails
+     * @throws RuntimeIOException if drawing fails
      */
-    public CompletedFrame draw(Consumer<Frame> renderer) throws IOException {
-        // Handle resize if needed
-        Size size = backend.size();
-        Rect area = Rect.of(size.width(), size.height());
+    public CompletedFrame draw(Consumer<Frame> renderer) {
+        try {
+            // Handle resize if needed
+            Size size = backend.size();
+            Rect area = Rect.of(size.width(), size.height());
 
-        if (!area.equals(currentBuffer.area())) {
-            resize(area);
-        }
+            if (!area.equals(currentBuffer.area())) {
+                resize(area);
+            }
 
-        // Clear current buffer for new frame
-        currentBuffer.clear();
+            // Clear current buffer for new frame
+            currentBuffer.clear();
 
-        // Create frame and render
-        Frame frame = new Frame(currentBuffer, rawOutput);
-        renderer.accept(frame);
+            // Create frame and render
+            Frame frame = new Frame(currentBuffer, rawOutput);
+            renderer.accept(frame);
 
-        // Calculate diff and draw
-        List<CellUpdate> updates = previousBuffer.diff(currentBuffer);
-        if (!updates.isEmpty()) {
-            backend.draw(updates);
-        }
+            // Calculate diff and draw
+            List<CellUpdate> updates = previousBuffer.diff(currentBuffer);
+            if (!updates.isEmpty()) {
+                backend.draw(updates);
+            }
 
-        // Handle cursor
-        if (frame.isCursorVisible()) {
-            frame.cursorPosition().ifPresent(pos -> {
-                try {
-                    backend.setCursorPosition(pos);
-                    if (hiddenCursor) {
-                        backend.showCursor();
-                        hiddenCursor = false;
+            // Handle cursor
+            if (frame.isCursorVisible()) {
+                frame.cursorPosition().ifPresent(pos -> {
+                    try {
+                        backend.setCursorPosition(pos);
+                        if (hiddenCursor) {
+                            backend.showCursor();
+                            hiddenCursor = false;
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeIOException(
+                                String.format("Failed to set cursor position to %s: %s", pos, e.getMessage()), e);
                     }
+                });
+            } else if (!hiddenCursor) {
+                try {
+                    backend.hideCursor();
+                    hiddenCursor = true;
                 } catch (IOException e) {
-                    throw new RuntimeException("Failed to set cursor position", e);
+                    throw new RuntimeIOException("Failed to hide cursor: " + e.getMessage(), e);
                 }
-            });
-        } else if (!hiddenCursor) {
-            backend.hideCursor();
-            hiddenCursor = true;
+            }
+
+            // Flush output
+            backend.flush();
+
+            // Swap buffers
+            Buffer temp = previousBuffer;
+            previousBuffer = currentBuffer;
+            currentBuffer = temp;
+
+            return new CompletedFrame(previousBuffer, area);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to draw frame: " + e.getMessage(), e);
         }
-
-        // Flush output
-        backend.flush();
-
-        // Swap buffers
-        Buffer temp = previousBuffer;
-        previousBuffer = currentBuffer;
-        currentBuffer = temp;
-
-        return new CompletedFrame(previousBuffer, area);
     }
 
     /**
      * Resizes the terminal buffers.
      *
      * @param area the new terminal area
-     * @throws IOException if resizing fails
+     * @throws RuntimeIOException if resizing fails
      */
-    private void resize(Rect area) throws IOException {
+    private void resize(Rect area) {
         currentBuffer = Buffer.empty(area);
         previousBuffer = Buffer.empty(area);
-        backend.clear();
+        try {
+            backend.clear();
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to clear terminal during resize: " + e.getMessage(), e);
+        }
     }
 
     /**
      * Clears the terminal and resets the buffers.
      *
-     * @throws IOException if clearing fails
+     * @throws RuntimeIOException if clearing fails
      */
-    public void clear() throws IOException {
-        backend.clear();
-        Rect area = currentBuffer.area();
-        currentBuffer = Buffer.empty(area);
-        previousBuffer = Buffer.empty(area);
+    public void clear() {
+        try {
+            backend.clear();
+            Rect area = currentBuffer.area();
+            currentBuffer = Buffer.empty(area);
+            previousBuffer = Buffer.empty(area);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to clear terminal: " + e.getMessage(), e);
+        }
     }
 
     /**
      * Shows the cursor.
      *
-     * @throws IOException if showing the cursor fails
+     * @throws RuntimeIOException if showing the cursor fails
      */
-    public void showCursor() throws IOException {
-        backend.showCursor();
-        hiddenCursor = false;
+    public void showCursor() {
+        try {
+            backend.showCursor();
+            hiddenCursor = false;
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to show cursor: " + e.getMessage(), e);
+        }
     }
 
     /**
      * Hides the cursor.
      *
-     * @throws IOException if hiding the cursor fails
+     * @throws RuntimeIOException if hiding the cursor fails
      */
-    public void hideCursor() throws IOException {
-        backend.hideCursor();
-        hiddenCursor = true;
+    public void hideCursor() {
+        try {
+            backend.hideCursor();
+            hiddenCursor = true;
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to hide cursor: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -204,13 +238,17 @@ public final class Terminal<B extends Backend> implements AutoCloseable {
     /**
      * Closes the terminal and releases resources.
      *
-     * @throws IOException if closing fails
+     * @throws RuntimeIOException if closing fails
      */
     @Override
-    public void close() throws IOException {
-        if (hiddenCursor) {
-            backend.showCursor();
+    public void close() {
+        try {
+            if (hiddenCursor) {
+                backend.showCursor();
+            }
+            backend.close();
+        } catch (IOException e) {
+            throw new RuntimeIOException("Failed to close terminal: " + e.getMessage(), e);
         }
-        backend.close();
     }
 }

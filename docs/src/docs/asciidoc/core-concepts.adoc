@@ -475,6 +475,19 @@ if (event instanceof TickEvent) {
 }
 ----
 
+=== Exceptions
+
+TamboUI tries to enforce a clear, consistent exception hierarchy for framework errors.
+
+* All framework exceptions extend `TamboUIException` (`dev.tamboui.error.TamboUIException`). This is a `RuntimeException`.
+* Terminal I/O errors are wrapped in `RuntimeIOException` (`dev.tamboui.error.RuntimeIOException`), to avoid having to catch `IOException` which often are non-recoverable.
+* Backend (non-I/O) errors use `BackendException` (`dev.tamboui.terminal.BackendException`).
+* TUI framework errors use `TuiException` (`dev.tamboui.tui.TuiException`).
+* For invalid parameters or state, Java standard exceptions such as `IllegalArgumentException` or `IllegalStateException` are used.
+* Domain-specific exception types (e.g., `SolverException` for layout, `CssParseException` for CSS parsing) are used where possible.
+
+TamboUI's `TuiRunner` also provides centralized error handling: all exceptions during rendering and event handling are passed to a configurable `RenderErrorHandler`. The default behavior displays errors (with stack traces) in the UI for easier debugging.
+
 == Next Steps
 
 * Explore the link:widgets.html[Widgets Reference] for available components

@@ -199,7 +199,8 @@ public final class ActionHandler {
                     try {
                         method.invoke(target, event);
                     } catch (Exception e) {
-                        throw new RuntimeException("Failed to invoke @OnAction method: " + method.getName(), e);
+                        throw new IllegalStateException(
+                                "Failed to invoke @OnAction method: " + method.getName(), e);
                     }
                 });
             }

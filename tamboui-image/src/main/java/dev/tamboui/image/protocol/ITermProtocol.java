@@ -5,6 +5,7 @@
 package dev.tamboui.image.protocol;
 
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.error.RuntimeIOException;
 import dev.tamboui.image.ImageData;
 import dev.tamboui.image.capability.TerminalImageProtocol;
 import dev.tamboui.layout.Rect;
@@ -56,7 +57,7 @@ public final class ITermProtocol implements ImageProtocol {
     @Override
     public void render(ImageData image, Rect area, Buffer buffer, OutputStream rawOutput) throws IOException {
         if (rawOutput == null) {
-            throw new IOException("iTerm2 protocol requires raw output stream");
+            throw new RuntimeIOException("iTerm2 protocol requires raw output stream");
         }
 
         if (area.isEmpty()) {

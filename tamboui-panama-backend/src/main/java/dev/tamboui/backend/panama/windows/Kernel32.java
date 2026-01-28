@@ -14,6 +14,9 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 
+import dev.tamboui.error.RuntimeIOException;
+import dev.tamboui.terminal.BackendException;
+
 /**
  * Panama FFI bindings to Windows Kernel32 functions for console operations.
  * <p>
@@ -140,7 +143,7 @@ public final class Kernel32 {
         try {
             return (MemorySegment) GET_STD_HANDLE.invokeExact(stdHandle);
         } catch (Throwable t) {
-            throw new RuntimeException("GetStdHandle failed", t);
+            throw new RuntimeIOException("GetStdHandle failed", t);
         }
     }
 
@@ -155,7 +158,7 @@ public final class Kernel32 {
         try {
             return (int) GET_CONSOLE_MODE.invokeExact(handle, modePtr);
         } catch (Throwable t) {
-            throw new RuntimeException("GetConsoleMode failed", t);
+            throw new BackendException("GetConsoleMode failed", t);
         }
     }
 
@@ -170,7 +173,7 @@ public final class Kernel32 {
         try {
             return (int) SET_CONSOLE_MODE.invokeExact(handle, mode);
         } catch (Throwable t) {
-            throw new RuntimeException("SetConsoleMode failed", t);
+            throw new BackendException("SetConsoleMode failed", t);
         }
     }
 
@@ -185,7 +188,7 @@ public final class Kernel32 {
         try {
             return (int) GET_CONSOLE_SCREEN_BUFFER_INFO.invokeExact(handle, infoPtr);
         } catch (Throwable t) {
-            throw new RuntimeException("GetConsoleScreenBufferInfo failed", t);
+            throw new BackendException("GetConsoleScreenBufferInfo failed", t);
         }
     }
 
@@ -204,7 +207,7 @@ public final class Kernel32 {
         try {
             return (int) WRITE_CONSOLE.invokeExact(handle, buffer, numChars, numWritten, reserved);
         } catch (Throwable t) {
-            throw new RuntimeException("WriteConsoleW failed", t);
+            throw new BackendException("WriteConsoleW failed", t);
         }
     }
 
@@ -222,7 +225,7 @@ public final class Kernel32 {
         try {
             return (int) READ_CONSOLE_INPUT.invokeExact(handle, buffer, length, numRead);
         } catch (Throwable t) {
-            throw new RuntimeException("ReadConsoleInputW failed", t);
+            throw new BackendException("ReadConsoleInputW failed", t);
         }
     }
 
@@ -237,7 +240,7 @@ public final class Kernel32 {
         try {
             return (int) GET_NUMBER_OF_CONSOLE_INPUT_EVENTS.invokeExact(handle, numEvents);
         } catch (Throwable t) {
-            throw new RuntimeException("GetNumberOfConsoleInputEvents failed", t);
+            throw new BackendException("GetNumberOfConsoleInputEvents failed", t);
         }
     }
 
@@ -250,7 +253,7 @@ public final class Kernel32 {
         try {
             return (int) GET_LAST_ERROR.invokeExact();
         } catch (Throwable t) {
-            throw new RuntimeException("GetLastError failed", t);
+            throw new BackendException("GetLastError failed", t);
         }
     }
 
@@ -266,7 +269,7 @@ public final class Kernel32 {
         try {
             return (int) WAIT_FOR_SINGLE_OBJECT.invokeExact(handle, timeoutMs);
         } catch (Throwable t) {
-            throw new RuntimeException("WaitForSingleObject failed", t);
+            throw new BackendException("WaitForSingleObject failed", t);
         }
     }
 

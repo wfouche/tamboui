@@ -6,6 +6,9 @@ package dev.tamboui.tui;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import dev.tamboui.tui.error.TuiException;
+
 import org.junit.jupiter.api.DisplayName;
 
 import java.util.concurrent.CountDownLatch;
@@ -84,7 +87,7 @@ class RenderThreadTest {
         latch.await(1, TimeUnit.SECONDS);
 
         assertThat(caught.get())
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(TuiException.class)
             .hasMessageContaining("test-thread")
             .hasMessageContaining("render thread");
     }

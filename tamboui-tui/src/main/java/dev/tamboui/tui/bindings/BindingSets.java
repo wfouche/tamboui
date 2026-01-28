@@ -4,6 +4,8 @@
  */
 package dev.tamboui.tui.bindings;
 
+import dev.tamboui.error.RuntimeIOException;
+import dev.tamboui.tui.error.TuiException;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.MouseButton;
 import dev.tamboui.tui.event.MouseEventKind;
@@ -12,9 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -65,11 +65,11 @@ public final class BindingSets {
         try (InputStream in = BindingSets.class.getClassLoader()
                 .getResourceAsStream(BINDINGS_RESOURCE_PATH + resourceName)) {
             if (in == null) {
-                throw new RuntimeException("Built-in bindings not found: " + resourceName);
+                throw new RuntimeIOException("Built-in bindings not found: " + resourceName);
             }
             return load(in, base);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load built-in bindings: " + resourceName, e);
+            throw new RuntimeIOException("Failed to load built-in bindings: " + resourceName, e);
         }
     }
 
@@ -304,7 +304,7 @@ public final class BindingSets {
         try (InputStream in = classLoader.getResourceAsStream(
                 resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath)) {
             if (in == null) {
-                throw new IOException("Resource not found: " + resourcePath);
+                throw new RuntimeIOException("Resource not found: " + resourcePath);
             }
             return load(in);
         }
@@ -332,7 +332,7 @@ public final class BindingSets {
 
     private static InputTrigger parseTrigger(String text) throws IOException {
         if (text.isEmpty()) {
-            throw new IOException("Empty trigger");
+            throw new TuiException("Empty trigger");
         }
 
         // Check if it's a mouse trigger
@@ -397,7 +397,7 @@ public final class BindingSets {
             return KeyTrigger.ch(c);
         }
 
-        throw new IOException("Unknown key: " + text);
+        throw new TuiException("Unknown key: " + text);
     }
 
     private static MouseTrigger parseMouseTrigger(String text) throws IOException {
@@ -425,14 +425,14 @@ public final class BindingSets {
 
         // Should start with "Mouse."
         if (!remaining.toLowerCase().startsWith("mouse.")) {
-            throw new IOException("Invalid mouse trigger (expected Mouse.Button.Kind): " + text);
+            throw new RuntimeIOException("Invalid mouse trigger (expected Mouse.Button.Kind): " + text);
         }
         remaining = remaining.substring(6); // Remove "Mouse."
 
         // Parse button and kind
         String[] parts = remaining.split("\\.");
         if (parts.length < 1 || parts.length > 2) {
-            throw new IOException("Invalid mouse trigger format: " + text);
+            throw new RuntimeIOException("Invalid mouse trigger format: " + text);
         }
 
         MouseButton button = MouseButton.NONE;
@@ -442,17 +442,17 @@ public final class BindingSets {
             // Format: Button.Kind
             button = MOUSE_BUTTONS.get(parts[0].toLowerCase());
             if (button == null) {
-                throw new IOException("Unknown mouse button: " + parts[0]);
+                throw new RuntimeIOException("Unknown mouse button: " + parts[0]);
             }
             kind = MOUSE_KINDS.get(parts[1].toLowerCase());
             if (kind == null) {
-                throw new IOException("Unknown mouse event kind: " + parts[1]);
+                throw new RuntimeIOException("Unknown mouse event kind: " + parts[1]);
             }
         } else {
             // Format: Kind only (for scroll events)
             kind = MOUSE_KINDS.get(parts[0].toLowerCase());
             if (kind == null) {
-                throw new IOException("Unknown mouse event kind: " + parts[0]);
+                throw new RuntimeIOException("Unknown mouse event kind: " + parts[0]);
             }
         }
 
