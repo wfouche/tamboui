@@ -4,7 +4,7 @@
  */
 package dev.tamboui.terminal;
 
-import dev.tamboui.TamboUIException;
+import dev.tamboui.errors.TamboUIException;
 import dev.tamboui.internal.record.RecordingBackend;
 import dev.tamboui.internal.record.RecordingConfig;
 import dev.tamboui.util.SafeServiceLoader;

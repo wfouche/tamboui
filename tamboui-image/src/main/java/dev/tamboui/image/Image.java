@@ -4,8 +4,8 @@
  */
 package dev.tamboui.image;
 
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.image.capability.TerminalImageCapabilities;
 import dev.tamboui.image.protocol.ImageProtocol;
 import dev.tamboui.layout.Rect;

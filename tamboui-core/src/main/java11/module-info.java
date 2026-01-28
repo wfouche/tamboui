@@ -19,7 +19,7 @@ module dev.tamboui.core {
     exports dev.tamboui.layout.grid;
     exports dev.tamboui.layout.stack;
     exports dev.tamboui.widget;
-    exports dev.tamboui;
+    exports dev.tamboui.errors;
 
     uses dev.tamboui.terminal.BackendProvider;
 }

@@ -4,8 +4,8 @@
  */
 package dev.tamboui.tui;
 
-import dev.tamboui.TamboUIException;
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.errors.TamboUIException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
 import dev.tamboui.style.Color;

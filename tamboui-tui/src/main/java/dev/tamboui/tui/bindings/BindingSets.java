@@ -4,7 +4,7 @@
  */
 package dev.tamboui.tui.bindings;
 
-import dev.tamboui.TerminalIOException;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.tui.TuiException;
 import dev.tamboui.tui.event.KeyCode;
 import dev.tamboui.tui.event.MouseButton;

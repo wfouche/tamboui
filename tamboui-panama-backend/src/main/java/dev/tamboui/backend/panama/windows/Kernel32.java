@@ -13,8 +13,9 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
+
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.terminal.BackendException;
-import dev.tamboui.TerminalIOException;
 
 /**
  * Panama FFI bindings to Windows Kernel32 functions for console operations.

@@ -6,7 +6,7 @@ package dev.tamboui.image;
 
 import javax.imageio.ImageIO;
 
-import dev.tamboui.TerminalIOException;
+import dev.tamboui.errors.TerminalIOException;
 
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;

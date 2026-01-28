@@ -1,6 +1,6 @@
 package dev.tamboui.tui;
 
-import dev.tamboui.TamboUIException;
+import dev.tamboui.errors.TamboUIException;
 
 /**
  * Exception for TUI framework related errors.

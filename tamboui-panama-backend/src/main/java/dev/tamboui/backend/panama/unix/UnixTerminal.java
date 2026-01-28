@@ -5,8 +5,8 @@
 package dev.tamboui.backend.panama.unix;
 
 import dev.tamboui.terminal.BackendException;
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.backend.panama.PlatformTerminal;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.layout.Size;
 
 import java.io.IOException;

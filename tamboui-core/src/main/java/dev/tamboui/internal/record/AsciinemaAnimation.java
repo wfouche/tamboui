@@ -4,8 +4,8 @@
  */
 package dev.tamboui.internal.record;
 
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.errors.TerminalIOException;
 
 import java.io.IOException;
 import java.io.StringWriter;

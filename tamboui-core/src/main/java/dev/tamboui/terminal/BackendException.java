@@ -1,6 +1,6 @@
 package dev.tamboui.terminal;
 
-import dev.tamboui.TamboUIException;
+import dev.tamboui.errors.TamboUIException;
 
 /**
  * Exception for backend errors.

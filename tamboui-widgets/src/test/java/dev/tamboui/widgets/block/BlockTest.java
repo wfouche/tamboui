@@ -4,8 +4,8 @@
  */
 package dev.tamboui.widgets.block;
 
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.buffer.Buffer;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.layout.Alignment;
 import dev.tamboui.layout.Padding;
 import dev.tamboui.layout.Rect;

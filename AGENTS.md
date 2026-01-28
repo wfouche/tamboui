@@ -182,14 +182,15 @@ TamboUI uses a consistent exception hierarchy for framework errors.
 
 ### Exception Hierarchy
 
-- **`TamboUIException`** (`dev.tamboui.TamboUIException`) - Abstract base exception for all TamboUI framework errors
-  - Extends `RuntimeException` (unchecked)
-  - Abstract base class that all TamboUI exceptions extend
-  - **`TerminalException`** (`dev.tamboui.TerminalException`) - Extends `TamboUIException`
-    - Used for general framework errors that are not specifically related to terminal I/O
-  - **`TerminalIOException`** (`dev.tamboui.TerminalIOException`) - Extends `TerminalException`
-    - Used specifically for terminal I/O errors (wraps `IOException` from backend operations)
-    - Provides type-safe access to the underlying `IOException` via `getCause()`
+- **`TamboUIException`** (`dev.tamboui.errors.TamboUIException`) - Abstract base exception for all TamboUI framework errors
+ - Extends `RuntimeException` (unchecked)
+ - Abstract base class that all TamboUI exceptions extend
+ - **`TerminalIOException`** (`dev.tamboui.errors.TerminalIOException`) - Extends `TamboUIException`
+ - Used specifically for terminal I/O errors (wraps `IOException` from backend operations)
+ - **`BackendException`** (`dev.tamboui.terminal.BackendException`) - Extends `TamboUIException`
+ - Used for backend-related errors that are not specifically terminal I/O (e.g. native failures, provider lookup)
+ - **`TuiException`** (`dev.tamboui.tui.TuiException`) - Extends `TamboUIException`
+ - Used for TUI framework–level errors (e.g. render thread misuse, invalid bindings)
 
 ### Exception Usage Guidelines
 
@@ -202,10 +203,10 @@ TamboUI uses a consistent exception hierarchy for framework errors.
    - Backends are low-level implementations; `IOException` is appropriate here
    - Terminal layer wraps these in `TerminalIOException` for user-facing APIs
 
-3. **General Framework Errors**: Use `TerminalException` for non-I/O framework errors:
-   - Resource loading failures (e.g., bindings, configuration)
-   - Native code failures (e.g., Panama FFI errors)
-   - Other framework-level errors that aren't I/O or rendering specific
+3. **General Framework Errors**: Use the most specific `TamboUIException` subtype:
+   - `TerminalIOException` for terminal I/O errors
+   - `BackendException` for non-I/O backend errors (e.g., native/Panama failures, provider resolution)
+   - `TuiException` for TUI framework errors (e.g., invalid bindings, render thread misuse)
 
 4. **Parameter Validation**: Use standard Java exceptions:
    - `IllegalArgumentException` for invalid method parameters
@@ -225,8 +226,8 @@ When wrapping exceptions, always include context:
 throw new TerminalIOException(
     String.format("Failed to set cursor position to %s: %s", pos, e.getMessage()), e);
 
-// Good: general framework error
-throw new TerminalException("Failed to load built-in bindings: " + resourceName, e);
+// Good: backend error
+throw new BackendException("Failed to load backend: " + backendName, e);
 
 // Avoid: generic message
 throw new RuntimeException("Error", e);

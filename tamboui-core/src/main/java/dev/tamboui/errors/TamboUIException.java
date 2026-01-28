@@ -2,7 +2,7 @@
  * Copyright TamboUI Contributors
  * SPDX-License-Identifier: MIT
  */
-package dev.tamboui;
+package dev.tamboui.errors;
 
 /**
  * Abstract base exception for all TamboUI framework errors.

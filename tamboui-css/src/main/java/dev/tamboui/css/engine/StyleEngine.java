@@ -4,7 +4,6 @@
  */
 package dev.tamboui.css.engine;
 
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.css.Styleable;
 import dev.tamboui.css.cascade.CascadeResolver;
 import dev.tamboui.css.cascade.PseudoClassState;
@@ -13,6 +12,7 @@ import dev.tamboui.css.model.Rule;
 import dev.tamboui.css.model.Stylesheet;
 import dev.tamboui.css.parser.CssParser;
 import dev.tamboui.css.property.PropertyConverter;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.style.Color;
 import dev.tamboui.style.ColorConverter;
 

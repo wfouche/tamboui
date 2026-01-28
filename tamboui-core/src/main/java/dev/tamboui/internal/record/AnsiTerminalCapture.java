@@ -12,7 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import dev.tamboui.TerminalIOException;
+import dev.tamboui.errors.TerminalIOException;
 
 /**
  * Captures raw bytes written to System.out for recording inline demos.

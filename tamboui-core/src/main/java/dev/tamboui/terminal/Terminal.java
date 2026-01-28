@@ -4,9 +4,9 @@
  */
 package dev.tamboui.terminal;
 
-import dev.tamboui.TerminalIOException;
 import dev.tamboui.buffer.Buffer;
 import dev.tamboui.buffer.CellUpdate;
+import dev.tamboui.errors.TerminalIOException;
 import dev.tamboui.layout.Rect;
 import dev.tamboui.layout.Size;
 
