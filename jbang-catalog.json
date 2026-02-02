@@ -7,9 +7,6 @@
     "error-handling-demo": {
       "script-ref": "demos/error-handling-demo/src/main/java/dev/tamboui/demo/errorhandling/ErrorHandlingDemo.java"
     },
-    "export-demo": {
-      "script-ref": "tamboui-core/demos/export-demo/src/main/java/dev/tamboui/demo/ExportDemo.java"
-    },
     "fakodex-demo": {
       "script-ref": "demos/fakodex-demo/src/main/java/dev/tamboui/demo/coding/CodingAssistantDemo.java"
     },
@@ -45,6 +42,9 @@
     },
     "dock-demo": {
       "script-ref": "tamboui-core/demos/dock-demo/src/main/java/dev/tamboui/demo/DockDemo.java"
+    },
+    "export-demo": {
+      "script-ref": "tamboui-core/demos/export-demo/src/main/java/dev/tamboui/demo/ExportDemo.java"
     },
     "flow-demo": {
       "script-ref": "tamboui-core/demos/flow-demo/src/main/java/dev/tamboui/demo/FlowDemo.java"
