@@ -56,12 +56,12 @@ public final class ExportDemo {
     /**
      * Entry point.
      *
-     * @param args optional output directory (default: current directory)
+     * @param args optional output directory (default: temp directory)
      * @throws IOException if writing export files fails
      */
     public static void main(String[] args) throws IOException {
-        Path outDir = args.length > 0 ? Paths.get(args[0]) : Paths.get(".");
-        if (!Files.isDirectory(outDir)) {
+        Path outDir = args.length > 0 ? Paths.get(args[0]) : Files.createTempDirectory("tamboui-export-");
+        if (args.length > 0 && !Files.isDirectory(outDir)) {
             System.err.println("Not a directory: " + outDir);
             System.exit(1);
         }

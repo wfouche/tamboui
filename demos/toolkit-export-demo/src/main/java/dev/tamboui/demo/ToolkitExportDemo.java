@@ -57,11 +57,11 @@ public final class ToolkitExportDemo {
     /**
      * Entry point. Optional first argument: output directory for exported files.
      *
-     * @param args optional output path; default is current directory
+     * @param args optional output path; default is a temp directory
      * @throws Exception if export or I/O fails
      */
     public static void main(String[] args) throws Exception {
-        Path outDir = args.length > 0 ? Paths.get(args[0]) : Paths.get(".");
+        Path outDir = args.length > 0 ? Paths.get(args[0]) : Files.createTempDirectory("tamboui-export-");
         ToolkitExportDemo app = new ToolkitExportDemo(outDir);
 
         var config = TuiConfig.builder()
