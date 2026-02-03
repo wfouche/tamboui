@@ -6,9 +6,11 @@ Thanks for taking the time to contribute! This guide explains how to set up your
 
 - `git` command
 - Java 25 is required to build
-- Core Java 8 used for primary library modules.
-- Java 21+ ok to use for demo applications.
 - Gradle 9+ (use `./gradlew`).
+
+## Note on Java versions
+
+The build require Java 25, we use Java 21+ in demos, except File Manager which is used for verifying the core library can still run on Java 8.
 
 ## Setup
 
