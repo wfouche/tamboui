@@ -16,11 +16,11 @@ dependencies {
     implementation(libs.aesh.terminal.http)
     
     // Apache SSHD for SSH server
-    implementation("org.apache.sshd:sshd-core:2.14.0")
-    implementation("org.apache.sshd:sshd-netty:2.14.0")
+    implementation(libs.apache.sshd.core)
+    implementation(libs.apache.sshd.netty)
     
     // Netty for HTTP/WebSocket server
-    implementation("io.netty:netty-all:4.1.81.Final")
+    implementation(libs.netty.all)
 }
 
 application {
