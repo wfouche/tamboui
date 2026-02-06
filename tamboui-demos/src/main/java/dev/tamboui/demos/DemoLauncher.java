@@ -383,19 +383,55 @@ public class DemoLauncher {
                 .clearOnClose(true)
                 .build();
 
+        // Remember state across iterations (use arrays for lambda capture)
+        String[] lastFilterTextRef = new String[]{""};
+        String[] lastSelectedDemoIdRef = new String[]{null};
+
         // Main loop: keep showing selector until user quits
         while (true) {
-            // State for filtering and selection (reset each iteration)
-            TextInputState filterState = new TextInputState();
+            // State for filtering and selection (restore from previous iteration)
+            TextInputState filterState = new TextInputState(lastFilterTextRef[0]);
             ListState listState = new ListState();
             @SuppressWarnings("unchecked")
             List<DemoEntry>[] filteredDemosRef = (List<DemoEntry>[]) new List<?>[]{new ArrayList<>(allDemos)};
             DemoEntry[] selectedDemoRef = new DemoEntry[1];
             boolean[] shouldQuitRef = new boolean[1];
 
-            // Select first item initially
+            // Apply filter if we have one
+            if (!lastFilterTextRef[0].isEmpty()) {
+                String filter = lastFilterTextRef[0].toLowerCase();
+                List<DemoEntry> filtered = new ArrayList<>();
+                for (DemoEntry demo : allDemos) {
+                    if (demo.id().toLowerCase().contains(filter) ||
+                            demo.displayName().toLowerCase().contains(filter) ||
+                            (demo.description() != null && demo.description().toLowerCase().contains(filter)) ||
+                            demo.module().toLowerCase().contains(filter)) {
+                        filtered.add(demo);
+                    }
+                }
+                filteredDemosRef[0] = filtered;
+            }
+
+            // Restore selection position: try to find the last selected demo
             if (!filteredDemosRef[0].isEmpty()) {
-                listState.selectFirst();
+                if (lastSelectedDemoIdRef[0] != null) {
+                    int foundIndex = -1;
+                    for (int i = 0; i < filteredDemosRef[0].size(); i++) {
+                        if (filteredDemosRef[0].get(i).id().equals(lastSelectedDemoIdRef[0])) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+                    if (foundIndex >= 0) {
+                        listState.select(foundIndex);
+                    } else {
+                        // Last selected demo is filtered out, select first
+                        listState.selectFirst();
+                    }
+                } else {
+                    // First time, select first item
+                    listState.selectFirst();
+                }
             }
 
             // Create and run the inline TUI runner for this iteration
@@ -417,6 +453,8 @@ public class DemoLauncher {
                                     Integer selected = listState.selected();
                                     if (selected != null && selected < filteredDemosRef[0].size()) {
                                         selectedDemoRef[0] = filteredDemosRef[0].get(selected);
+                                        // Remember the selected demo ID for next iteration
+                                        lastSelectedDemoIdRef[0] = selectedDemoRef[0].id();
                                         r.quit();
                                         return true;
                                     }
@@ -426,25 +464,46 @@ public class DemoLauncher {
                                 // Handle list navigation
                                 if (keyEvent.isUp()) {
                                     listState.selectPrevious();
+                                    // Remember current selection
+                                    Integer selected = listState.selected();
+                                    if (selected != null && selected < filteredDemosRef[0].size()) {
+                                        lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(selected).id();
+                                    }
                                     return true;
                                 }
                                 if (keyEvent.isDown()) {
                                     listState.selectNext(filteredDemosRef[0].size());
+                                    // Remember current selection
+                                    Integer selected = listState.selected();
+                                    if (selected != null && selected < filteredDemosRef[0].size()) {
+                                        lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(selected).id();
+                                    }
                                     return true;
                                 }
                                 if (keyEvent.isHome()) {
                                     listState.selectFirst();
+                                    // Remember current selection
+                                    if (!filteredDemosRef[0].isEmpty()) {
+                                        lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(0).id();
+                                    }
                                     return true;
                                 }
                                 if (keyEvent.isEnd()) {
                                     listState.selectLast(filteredDemosRef[0].size());
+                                    // Remember current selection
+                                    Integer selected = listState.selected();
+                                    if (selected != null && selected < filteredDemosRef[0].size()) {
+                                        lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(selected).id();
+                                    }
                                     return true;
                                 }
 
                                 // Handle text input for filtering
                                 if (handleTextInputKey(filterState, keyEvent)) {
+                                    // Remember filter text
+                                    lastFilterTextRef[0] = filterState.text();
                                     // Filter demos based on input
-                                    String filter = filterState.text().toLowerCase();
+                                    String filter = lastFilterTextRef[0].toLowerCase();
                                     List<DemoEntry> filtered = new ArrayList<>();
                                     if (filter.isEmpty()) {
                                         filtered.addAll(allDemos);
@@ -459,11 +518,30 @@ public class DemoLauncher {
                                         }
                                     }
                                     filteredDemosRef[0] = filtered;
-                                    // Reset selection to first item after filtering
+                                    // Try to restore selection, or select first item after filtering
                                     if (!filteredDemosRef[0].isEmpty()) {
-                                        listState.selectFirst();
+                                        if (lastSelectedDemoIdRef[0] != null) {
+                                            int foundIndex = -1;
+                                            for (int i = 0; i < filteredDemosRef[0].size(); i++) {
+                                                if (filteredDemosRef[0].get(i).id().equals(lastSelectedDemoIdRef[0])) {
+                                                    foundIndex = i;
+                                                    break;
+                                                }
+                                            }
+                                            if (foundIndex >= 0) {
+                                                listState.select(foundIndex);
+                                            } else {
+                                                // Last selected demo is filtered out, select first
+                                                listState.selectFirst();
+                                                lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(0).id();
+                                            }
+                                        } else {
+                                            listState.selectFirst();
+                                            lastSelectedDemoIdRef[0] = filteredDemosRef[0].get(0).id();
+                                        }
                                     } else {
                                         listState.select(null);
+                                        lastSelectedDemoIdRef[0] = null;
                                     }
                                     return true;
                                 }
