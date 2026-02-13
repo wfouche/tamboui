@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -856,6 +857,8 @@ public abstract class StyledElement<T extends StyledElement<T>> implements Eleme
      * @return this element for chaining
      */
     public T on(InputTrigger trigger, Consumer<Event> handler) {
+        Objects.requireNonNull(trigger);
+        Objects.requireNonNull(handler);
         if (trigger instanceof KeyTrigger) {
             KeyEventHandler prev = this.keyHandler;
             onKeyEvent(event -> {

@@ -10,6 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import dev.tamboui.annotations.bindings.OnAction;
+import dev.tamboui.tui.event.ActionEvent;
 import dev.tamboui.tui.event.Event;
 
 /**
@@ -155,7 +156,7 @@ public final class ActionHandler {
      *         false otherwise
      */
     public boolean fire(String action) {
-        return fire(action, new dev.tamboui.tui.event.ActionEvent(action));
+        return fire(action, ActionEvent.of(action));
     }
 
     /**
