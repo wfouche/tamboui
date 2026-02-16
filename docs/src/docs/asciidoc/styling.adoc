@@ -7,6 +7,10 @@
 
 include::_attributes.adoc[]
 
+[NOTE]
+CSS styling works at any API level. With Toolkit DSL, elements automatically support CSS classes and IDs.
+For lower-level APIs, implement `Styleable` and pass a `styleResolver` to widgets—see <<implementing-styleable>> and the `css-no-toolkit-demo` for examples.
+
 {project-name} supports CSS-based styling as an alternative to programmatic style configuration.
 Instead of chaining `.bold().cyan().onBlue()` calls, you can define styles in external `.tcss` files and apply them via selectors.
 
@@ -48,7 +52,7 @@ engine.setActiveStylesheet("dark");
 
 == TCSS Format
 
-{project-name} uses `.tcss` (Textual CSS) files - a CSS dialect designed for terminal UIs.
+{project-name} uses `.tcss` (TamboUI CSS) files - a CSS dialect designed for terminal UIs.
 
 === Variables
 

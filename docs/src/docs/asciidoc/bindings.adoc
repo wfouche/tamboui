@@ -161,6 +161,10 @@ ActionHandler actions = new ActionHandler(bindings)
 
 == @OnAction Annotation
 
+[NOTE]
+The `@OnAction` annotation works with Toolkit Components.
+For TuiRunner or immediate mode, use `ActionHandler` instead (see above).
+
 In Toolkit components, annotate methods to handle actions:
 
 [source,java]

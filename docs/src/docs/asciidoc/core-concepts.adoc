@@ -33,6 +33,9 @@ This model makes {project-name} applications easy to reason about: the UI is alw
 
 == Buffer System
 
+[TIP]
+If you're using the Toolkit DSL, you won't interact with buffers directly. Feel free to skip this section.
+
 === Buffer
 
 A `Buffer` is a 2D grid of `Cell` objects representing the terminal screen:

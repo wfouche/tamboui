@@ -7,6 +7,10 @@
 
 include::_attributes.adoc[]
 
+[NOTE]
+Form state and validation (`FormState`, `Validators`) are part of `tamboui-widgets` and work at any API level.
+The `formField()` and `form()` builders shown here are Toolkit DSL conveniences—see link:api-levels.html#toolkit-dsl[Toolkit DSL] for an introduction.
+
 {project-name} provides high-level form abstractions to simplify building interactive forms with labels, validation, and centralized state management.
 
 == Overview

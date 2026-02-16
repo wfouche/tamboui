@@ -147,11 +147,23 @@ include::code/getting-started/HelloInline.java[lines=3..-1]
 
 == Running the Demos
 
-The {project-name} repository includes many demo applications showcasing different features.
+{project-name} includes many demo applications showcasing different features.
 
-=== Using JBang
+=== Without Cloning the Repository
 
-If you have JBang installed:
+The easiest way to explore demos is with JBang (you don't need to clone the TamboUI repository):
+
+[source,bash]
+----
+# Launch the interactive demo selector
+jbang demos@tamboui
+----
+
+=== From TamboUI sources
+
+If you've cloned the {project-name} repository, you have more options.
+
+==== Using JBang
 
 [source,bash]
 ----
@@ -162,7 +174,7 @@ jbang alias list .
 jbang sparkline-demo
 ----
 
-=== Using the run-demo.sh Script
+==== Using the run-demo.sh Script
 
 [source,bash]
 ----
@@ -176,7 +188,7 @@ jbang sparkline-demo
 ./run-demo.sh sparkline-demo --native
 ----
 
-=== Manual Build and Run
+==== Manual Build and Run
 
 [source,bash]
 ----
@@ -187,7 +199,7 @@ jbang sparkline-demo
 ./demos/sparkline-demo/build/install/sparkline-demo/bin/sparkline-demo
 ----
 
-=== Compiling to Native Image
+==== Compiling to Native Image
 
 With GraalVM installed:
 

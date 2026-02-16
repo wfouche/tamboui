@@ -1297,8 +1297,8 @@ You can use Toolkit elements inside a TuiRunner application, or drop down to dir
 
 == Next Steps
 
-* link:styling.html[CSS Styling] - external stylesheets and theming
 * link:bindings.html[Bindings and Actions] - key bindings and action handling
+* link:styling.html[CSS Styling] - external stylesheets and theming
 * link:mvc-architecture.html[Application Structure] - patterns for larger applications
 * link:widgets.html[Widgets Reference] - all available widgets
 * link:developer-guide.html[Developer Guide] - building custom widgets

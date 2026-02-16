@@ -75,6 +75,38 @@ include::_attributes.adoc[]
 |Stateful
 |Single-line text input
 
+|<<textarea,TextArea>>
+|Stateful
+|Multi-line text input
+
+|<<checkbox,Checkbox>>
+|Stateful
+|Toggleable checkbox
+
+|<<toggle,Toggle>>
+|Stateful
+|On/off toggle switch
+
+|<<select,Select>>
+|Stateful
+|Inline select with navigation indicators
+
+|<<tree,Tree>>
+|Stateful
+|Hierarchical tree view with expand/collapse
+
+|<<wavetext,WaveText>>
+|Stateful
+|Animated wave brightness text effect
+
+|<<logo,Logo>>
+|Stateless
+|Renders the Tamboui logo
+
+|<<errordisplay,ErrorDisplay>>
+|Stateless
+|Displays error information with stack trace
+
 |<<clear,Clear>>
 |Stateless
 |Clears an area (for widget layering)
@@ -678,6 +710,67 @@ NOTE: Programmatic styles set via `spinnerStyle()`, `frameSet()`, or `frames()` 
 
 NOTE: **For Toolkit DSL users**: Use `SpinnerElement` via `spinner()` factory methods. It manages state internally and advances automatically on each render. See <<toolkit-dsl>>.
 
+[[wavetext]]
+=== WaveText
+
+An animated text widget with a wave brightness effect:
+
+[source,java]
+----
+// Dark shadow moving through bright text (default)
+WaveText wave = WaveText.builder()
+    .text("Processing...")
+    .color(Color.CYAN)
+    .build();
+
+// Bright peak moving through dim text (inverted)
+WaveText wave = WaveText.builder()
+    .text("Loading...")
+    .color(Color.YELLOW)
+    .inverted(true)
+    .build();
+
+// Back-and-forth oscillation instead of looping
+WaveText wave = WaveText.builder()
+    .text("Thinking...")
+    .mode(WaveText.Mode.OSCILLATE)
+    .build();
+
+// Multiple peaks for dynamic effect
+WaveText wave = WaveText.builder()
+    .text("Working hard...")
+    .color(Color.GREEN)
+    .peakCount(2)
+    .peakWidth(5)
+    .speed(1.5)
+    .build();
+
+// Create state and render
+WaveTextState state = new WaveTextState();
+wave.render(area, buffer, state);
+
+// Advance animation each frame
+state.advance();
+----
+
+Configuration options:
+
+* `color(Color)` - Base color of the text
+* `dimFactor(double)` - Brightness of dim portion (0.0-1.0, default 0.3)
+* `peakWidth(int)` - Width of the wave peak in characters (default 3)
+* `peakCount(int)` - Number of peaks in the wave (default 1)
+* `speed(double)` - Animation speed multiplier (default 1.0)
+* `mode(Mode)` - `LOOP` (continuous) or `OSCILLATE` (back-and-forth)
+* `inverted(boolean)` - If true, bright peak on dim text; if false, dark shadow on bright text
+
+CSS properties:
+
+* `color` - Base text color
+* `wave-dim-factor` - Brightness of dim portion
+* `wave-peak-width` - Width of wave peak
+* `wave-peak-count` - Number of peaks
+* `wave-speed` - Animation speed multiplier
+
 == Input Widgets
 
 === TextInput
@@ -728,6 +821,214 @@ State methods:
 * `state.moveCursorLeft()` / `moveCursorRight()` - Move cursor
 * `state.clear()` - Clear all text
 
+[[textarea]]
+=== TextArea
+
+A multi-line text input field with scrolling and optional line numbers:
+
+[source,java]
+----
+// Create state
+TextAreaState state = new TextAreaState();
+
+// Or with initial content
+TextAreaState state = new TextAreaState("Line 1\nLine 2\nLine 3");
+
+// Build widget
+TextArea textArea = TextArea.builder()
+    .placeholder("Enter text...")
+    .showLineNumbers(true)
+    .cursorStyle(Style.EMPTY.reversed())
+    .lineNumberStyle(Style.EMPTY.dim())
+    .block(Block.builder()
+        .title("Editor")
+        .borders(Borders.ALL)
+        .build())
+    .build();
+
+// Render with cursor visible
+textArea.renderWithCursor(area, buffer, state, frame);
+
+// Handle key events
+if (event.code() == KeyCode.CHAR) {
+    state.insert(event.character());
+} else if (event.code() == KeyCode.ENTER) {
+    state.insert('\n');
+} else if (event.code() == KeyCode.BACKSPACE) {
+    state.deleteBackward();
+} else if (event.code() == KeyCode.UP) {
+    state.moveCursorUp();
+} else if (event.code() == KeyCode.DOWN) {
+    state.moveCursorDown();
+}
+----
+
+State methods:
+
+* `state.text()` - Get full text content
+* `state.setText(text)` - Set text content
+* `state.lineCount()` - Get number of lines
+* `state.getLine(row)` - Get text of specific line
+* `state.insert(char)` / `state.insert(string)` - Insert at cursor
+* `state.deleteBackward()` / `state.deleteForward()` - Delete characters
+* `state.moveCursorUp()` / `moveCursorDown()` / `moveCursorLeft()` / `moveCursorRight()` - Move cursor
+* `state.moveCursorToLineStart()` / `moveCursorToLineEnd()` - Jump to line boundaries
+* `state.moveCursorToStart()` / `moveCursorToEnd()` - Jump to document boundaries
+* `state.scrollUp(amount)` / `state.scrollDown(amount, visibleRows)` - Manual scrolling
+* `state.clear()` - Clear all content
+
+CSS properties:
+
+* `cursor-color` - Cursor highlight color
+* `placeholder-color` - Placeholder text color
+* `line-number-color` - Line number gutter color
+
+[[checkbox]]
+=== Checkbox
+
+A toggleable checkbox widget displaying checked/unchecked state:
+
+[source,java]
+----
+// Create state
+CheckboxState state = new CheckboxState();       // unchecked
+CheckboxState state = new CheckboxState(true);   // checked
+
+// Build widget with default style [x] / [ ]
+Checkbox checkbox = Checkbox.builder().build();
+
+// Custom symbols
+Checkbox checkbox = Checkbox.builder()
+    .checkedSymbol("[✓]")
+    .uncheckedSymbol("[ ]")
+    .checkedColor(Color.GREEN)
+    .uncheckedColor(Color.DARK_GRAY)
+    .build();
+
+checkbox.render(area, buffer, state);
+
+// Handle input
+if (event.code() == KeyCode.SPACE || event.code() == KeyCode.ENTER) {
+    state.toggle();
+}
+----
+
+State methods:
+
+* `state.isChecked()` / `state.value()` - Get checked state
+* `state.setChecked(boolean)` / `state.setValue(boolean)` - Set state
+* `state.toggle()` - Toggle and return new value
+
+CSS properties:
+
+* `checkbox-checked-symbol` - Symbol when checked (default: "[x]")
+* `checkbox-unchecked-symbol` - Symbol when unchecked (default: "[ ]")
+* `checkbox-checked-color` - Foreground color when checked
+* `checkbox-unchecked-color` - Foreground color when unchecked
+
+[[toggle]]
+=== Toggle
+
+A toggle switch widget with two display modes:
+
+[source,java]
+----
+// Create state
+ToggleState state = new ToggleState();       // off
+ToggleState state = new ToggleState(true);   // on
+
+// Single symbol mode (default): [ON ] or [OFF]
+Toggle toggle = Toggle.builder()
+    .onSymbol("◉ ON ")
+    .offSymbol("○ OFF")
+    .onColor(Color.GREEN)
+    .build();
+
+// Inline choice mode: ● Yes / ○ No
+Toggle toggle = Toggle.builder()
+    .inlineChoice(true)
+    .onLabel("Yes")
+    .offLabel("No")
+    .selectedIndicator("●")
+    .unselectedIndicator("○")
+    .selectedColor(Color.GREEN)
+    .unselectedColor(Color.DARK_GRAY)
+    .build();
+
+toggle.render(area, buffer, state);
+
+// Handle input
+if (event.code() == KeyCode.SPACE || event.code() == KeyCode.ENTER) {
+    state.toggle();
+}
+----
+
+State methods:
+
+* `state.isOn()` / `state.value()` - Get on/off state
+* `state.setOn(boolean)` / `state.setValue(boolean)` - Set state
+* `state.toggle()` - Toggle and return new value
+
+CSS properties (single mode):
+
+* `toggle-on-symbol` - Symbol when on (default: "[ON ]")
+* `toggle-off-symbol` - Symbol when off (default: "[OFF]")
+* `toggle-on-color` - Foreground color when on
+* `toggle-off-color` - Foreground color when off
+
+CSS properties (inline choice mode):
+
+* `toggle-selected-indicator` - Selected option indicator (default: "●")
+* `toggle-unselected-indicator` - Unselected option indicator (default: "○")
+* `toggle-selected-color` - Color for selected option
+* `toggle-unselected-color` - Color for unselected option
+
+[[select]]
+=== Select
+
+An inline select widget showing the current selection with navigation indicators:
+
+[source,java]
+----
+// Create state with options
+SelectState state = new SelectState("Option A", "Option B", "Option C");
+
+// Build widget: < Option A >
+Select select = Select.builder()
+    .leftIndicator("◄ ")
+    .rightIndicator(" ►")
+    .selectedColor(Color.CYAN)
+    .indicatorColor(Color.DARK_GRAY)
+    .build();
+
+select.render(area, buffer, state);
+
+// Handle navigation
+if (event.code() == KeyCode.LEFT) {
+    state.selectPrevious();  // wraps around
+} else if (event.code() == KeyCode.RIGHT) {
+    state.selectNext();      // wraps around
+}
+----
+
+State methods:
+
+* `state.selectedValue()` / `state.value()` - Get selected option text
+* `state.selectedIndex()` - Get selected index
+* `state.options()` - Get all options
+* `state.optionCount()` - Get number of options
+* `state.selectIndex(int)` - Select by index
+* `state.selectNext()` / `state.selectPrevious()` - Navigate (wraps)
+* `state.selectFirst()` / `state.selectLast()` - Jump to ends
+* `state.setOptions(...)` - Replace available options
+
+CSS properties:
+
+* `select-left-indicator` - Left navigation indicator (default: "< ")
+* `select-right-indicator` - Right navigation indicator (default: " >")
+* `select-selected-color` - Foreground color for selected value
+* `select-indicator-color` - Foreground color for indicators
+
 == Utility Widgets
 
 === Scrollbar
@@ -748,6 +1049,75 @@ state.viewportLength(20);
 state.position(scrollPosition);
 
 scrollbar.render(area, buffer, state);
+----
+
+[[logo]]
+=== Logo
+
+Renders the Tamboui logo for use in help or about screens:
+
+[source,java]
+----
+// Default tiny logo (2 lines)
+Logo logo = Logo.tiny();
+logo.render(area, buffer);
+
+// Or the normal size (4 lines)
+Logo logo = Logo.of(Logo.Size.NORMAL);
+logo.render(area, buffer);
+----
+
+Available sizes:
+
+* `Logo.Size.TINY` - 2-line compact logo using braille characters
+* `Logo.Size.NORMAL` - 4-line logo using box-drawing characters
+
+[[errordisplay]]
+=== ErrorDisplay
+
+Displays exception information with a formatted stack trace:
+
+[source,java]
+----
+// Quick creation from exception
+ErrorDisplay display = ErrorDisplay.from(exception);
+
+// Or with customization
+ErrorDisplay display = ErrorDisplay.builder()
+    .error(exception)
+    .title(" CRASH ")
+    .footer(" Press 'q' to quit, arrows to scroll ")
+    .borderColor(Color.RED)
+    .scroll(scrollOffset)
+    .build();
+
+display.render(area, buffer);
+
+// Handle scrolling
+int totalLines = display.lineCount();
+if (event.code() == KeyCode.DOWN) {
+    scrollOffset = Math.min(scrollOffset + 1, totalLines - visibleHeight);
+} else if (event.code() == KeyCode.UP) {
+    scrollOffset = Math.max(0, scrollOffset - 1);
+}
+----
+
+The widget displays:
+
+* Exception type in red and bold
+* Error message
+* Full stack trace (scrollable)
+* Footer with instructions
+
+[[clear]]
+=== Clear
+
+Clears an area by filling it with a style. Useful for widget layering:
+
+[source,java]
+----
+Clear clear = Clear.style(Style.EMPTY.bg(Color.BLUE));
+clear.render(area, buffer);
 ----
 
 [[toolkit-dsl]]

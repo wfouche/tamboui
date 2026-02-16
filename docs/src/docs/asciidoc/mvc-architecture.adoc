@@ -7,6 +7,10 @@
 
 include::_attributes.adoc[]
 
+[NOTE]
+The examples in this guide use the Toolkit DSL.
+See link:api-levels.html#toolkit-dsl[Toolkit DSL] for an introduction.
+
 This guide explains how to build maintainable terminal applications using the Model-View-Controller (MVC) pattern with {project-name}.
 
 == Architecture Overview
