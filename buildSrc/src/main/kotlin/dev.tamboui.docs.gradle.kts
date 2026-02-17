@@ -135,7 +135,9 @@ tasks.asciidoctor {
             "project-name" to "TamboUI",
             "github-repo" to "tamboui/tamboui",
             // Snippet source directory for include directives
-            "snippets-dir" to project.file("src/snippets/java").absolutePath
+            "snippets-dir" to project.file("src/snippets/java").absolutePath,
+            // Suppress timestamps for reproducible builds
+            "reproducible" to true
         )
     )
 }
