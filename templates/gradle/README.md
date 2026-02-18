@@ -2,26 +2,10 @@
 
 This is a minimal Gradle project template for creating TamboUI Toolkit applications.
 
-## Project Structure
-
-```
-.
-├── build.gradle.kts
-├── settings.gradle.kts
-├── gradle.properties
-├── README.md
-└── src/
-    └── main/
-        └── java/
-            └── dev/
-                └── tamboui/
-                    └── HelloToolkitApp.java
-```
-
 ## Requirements
 
 - Java 21 or later
-- Gradle 8.5 or later (wrapper included)
+- Gradle 8+ or 9+ (to be compatible with Java 25)
 
 ## Getting Started
 
@@ -46,8 +30,12 @@ This is a minimal Gradle project template for creating TamboUI Toolkit applicati
    ```
 
 5. **Run the application**:
+
+   Here `gradle run` will not work, because it runs Java via a daemon that has no terminal.
+
+   Instead, you can run the application with `java -jar`:
    ```bash
-   ./gradlew run
+   java -jar build/libs/hello-toolkit-app-0.1.0-SNAPSHOT-all.jar
    ```
 
    Or build the distribution and run it:
@@ -56,32 +44,14 @@ This is a minimal Gradle project template for creating TamboUI Toolkit applicati
    ./build/install/hello-toolkit-app/bin/hello-toolkit-app
    ```
 
-## Customization
+   or run it with `jbang run`:
+   ```bash
+   jbang run build/libs/hello-toolkit-app-0.1.0-SNAPSHOT-all.jar
+   ```
+   
+   The latter has the advantage you can run with `jbang run --debug` to attach a debugger.
 
-- **Change Java version**: Update `JavaLanguageVersion.of(21)` in `build.gradle.kts`
-- **Add dependencies**: Add them to the `dependencies` block in `build.gradle.kts`
-- **Modify the application**: Edit `src/main/java/dev/tamboui/HelloToolkitApp.java`
-
-## TamboUI Version
-
-The template uses `0.1.0-SNAPSHOT` by default. To use a different version:
-
-1. Check available versions at https://central.sonatype.com/repository/maven-snapshots/dev/tamboui/
-2. Update the version in the `dependencies` block in `build.gradle.kts`
-
-## Gradle Wrapper
-
-If you don't have Gradle installed, you can use the wrapper:
-```bash
-./gradlew --version
-```
-
-To generate the wrapper files:
-```bash
-gradle wrapper --gradle-version 8.5
-```
 
 ## Learn More
 
 - [TamboUI Documentation](https://tamboui.dev)
-- [TamboUI Examples](https://github.com/tamboui/tamboui/tree/main/demos)
