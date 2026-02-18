@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: Bump version to final
         run: |
-          sed -i -e "s/^\version\s*\=\s*.*/version=${{ github.event.inputs.version }}/g" gradle.properties
+          sed -i -e "s/^version=.*/version=${{ github.event.inputs.version }}/" gradle.properties
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Action"
           git commit -a -m "[release] Releasing version ${{ github.event.inputs.version }}"
@@ -48,7 +48,7 @@ jobs:
             out/jreleaser/output.properties
       - name: Bump version to next
         run: |
-          sed -i -e "s/^\version\s*\=\s*.*/version=${{ github.event.inputs.next-version }}/g" gradle.properties
+          sed -i -e "s/^version=.*/version=${{ github.event.inputs.next-version }}/" gradle.properties
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Action"
           git commit -a -m "[release] Bumping version to ${{ github.event.inputs.next-version }}"
